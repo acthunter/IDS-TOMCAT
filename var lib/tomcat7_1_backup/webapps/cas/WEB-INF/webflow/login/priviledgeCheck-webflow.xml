@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<flow xmlns="http://www.springframework.org/schema/webflow"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/webflow
+                          http://www.springframework.org/schema/webflow/spring-webflow-2.0.xsd"> 
+	<var name="targetPwdBean" class="com.antruak.cas.pm.flow.model.TargetPasswordBean" />
+	<var name="challengeResponse" class="java.lang.String" />
+
+	<input name="credentials" type="org.jasig.cas.authentication.principal.Credentials" />
+	<input name="level" type="java.lang.Integer" />
+	<input name="useOtpMode" type="java.lang.String" />
+	
+	<action-state id="check_forced_otp">
+		<evaluate expression="useOtpMode == null"/>
+		<transition on="yes" to="checkPriviledge">
+			<set value="securityTokenHandlerAction.getOTPMode(credentials.username)" name="flowScope.useOtpMode"/>
+		</transition>
+		<transition on="no" to="checkPriviledge">
+			<set name="flowScope.useOtpMode" value="useOtpMode" />
+		</transition>
+	</action-state>
+	
+	<decision-state id="checkPriviledge">
+		<if test="priviledgeHandler.isValidPriviledge(credentials.username, level)" then="success"/>
+		<if test="flowScope.useOtpMode == 'otprsa'" then="updatePriviledge" 
+			else="priviledgeAuth_confirm"/>
+	</decision-state>
+
+	<view-state id="priviledgeAuth_confirm" view="otpPaidView">
+		<transition on="Lanjut" to="updatePriviledge">
+
+		</transition>
+		<transition on="Batal" to="fail" />
+		<transition on-exception="java.lang.Exception" to="fail_notice" />
+	</view-state>
+
+	<action-state id="updatePriviledge">
+	
+		<evaluate
+			expression="priviledgeHandler.checkFlag(flowRequestContext, credentials.username, level)" />
+<!-- 		<evaluate expression="'needAuth'"/> -->
+		<transition on-exception="java.lang.Exception" to="fail">
+		</transition>
+		<transition on="needAuth" to="priviledgeAuth">
+			<set name="flowScope.retryAllowed" value="'YES'" />
+		</transition>
+		<transition on="validAuth" to="success" />
+	</action-state>
+	
+	<view-state id="priviledgeAuth" view="priviledgeAuthView"
+		model="targetPwdBean">
+		<var name="targetPwdBean" class="com.antruak.cas.pm.flow.model.TargetPasswordBean" />
+		<transition on="submitAnswer" to="doRequest">
+			<set name="challengeResponse" value="targetPwdBean.newPassword" />
+		</transition>
+		<transition on-exception="java.lang.Exception" to="fail_notice" />
+	</view-state>
+
+	<action-state id="doRequest">
+		<evaluate
+			expression="priviledgeHandler.handleChallenge(flowRequestContext, credentials.username, challengeResponse, null)" />
+		<transition on-exception="java.lang.Exception" to="fail">
+
+		</transition>
+		<transition on="authSuccess" to="success" />
+		<transition to="checkRetry" />
+	</action-state>
+
+	<action-state id="checkRetry">
+		<evaluate expression="flowScope.retryAllowed" />
+		<transition on="YES" to="priviledgeAuth">
+			<set name="flowScope.retryAllowed" value="'NO'" />
+		</transition>
+		<transition to="fail_notice" />
+	</action-state>
+
+	<view-state id="fail_notice" view="generalNoticeView">
+		<on-entry>
+			<set name="flashScope.noticeId" value="'priv_fail'"/>
+			<set name="flashScope.noticeBtnId" value="'btnOk'"/>
+		</on-entry>
+		<transition to="fail"/>
+	</view-state>
+	
+	<end-state id="success" />
+	<end-state id="fail" />
+</flow>
+

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<flow xmlns="http://www.springframework.org/schema/webflow"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/webflow
+                          http://www.springframework.org/schema/webflow/spring-webflow-2.0.xsd"
+	start-state="tokenConfirmedLogin">
+	
+	
+	<var name="targetPwdBean" class="com.antruak.cas.pm.flow.model.TargetPasswordBean" />
+
+	<input name="credentials" type="org.jasig.cas.authentication.principal.Credentials" />
+	<input name="reqtype" type="java.lang.String" />
+	<!-- <input name="target" type="java.lang.String" /> -->
+	<input name="mode" type="java.lang.String" />
+
+	<decision-state id="tokenConfirmedLogin">
+		<if test="conversationScope.tokenLogin == null" then="checkPriviledge"
+			else="showPasswordView" />
+	</decision-state>
+
+	<subflow-state id="checkPriviledge" subflow="priviledgeCheck">
+		<input name="credentials" value="flowScope.credentials"
+			type="org.jasig.cas.authentication.principal.Credentials" />
+		<input name="level" value="1" type="java.lang.Integer" />
+		<transition on="success" to="tmChangePassword">
+		</transition>
+		<transition on="fail" to="fail" />
+	</subflow-state>
+
+	<view-state id="tmChangePassword" view="tmChangePassword"
+		model="targetPwdBean">
+		<var name="targetPwdBean" class="com.antruak.cas.pm.flow.model.TargetPasswordBean" />
+		<on-entry>
+			<set name="targetPwdBean.username" value="credentials.username" />
+			<set name="targetPwdBean.reqtype" value="reqtype" />
+			<evaluate
+				expression="securityTokenHandlerAction.getAppsPriv(credentials.username)"
+				result="flowScope.appsList" />
+
+			<!-- <set name="targetPwdBean.targetSystem" value="target"/> -->
+		</on-entry>
+		<transition on="submitAnswer" to="doRequest">
+			<set name="flashScope.targetApps" value="targetPwdBean.targetSystem" />
+			<set name="flashScope.newPassword" value="targetPwdBean.newPassword" />
+		</transition>
+		<transition on-exception="java.lang.Exception" to="fail" />
+	</view-state>
+
+	<action-state id="doRequest">
+		<evaluate
+			expression="targetManager.doRequest(flowRequestContext, reqtype, credentials.username, flashScope.targetApps, flashScope.newPassword)" />
+		<transition on-exception="java.lang.Exception" to="fail">
+
+		</transition>
+		<transition on="success" to="success" />
+		<transition to="fail" />
+
+	</action-state>
+
+	<end-state id="success" />
+	<end-state id="fail" />
+</flow>
+

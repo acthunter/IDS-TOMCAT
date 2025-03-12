@@ -1,0 +1,138 @@
+	li.auth {text-align: center; width: 60px; float: left;}
+	li.auth_1 { background-color: grey;}
+	li.auth_2 { background-color: yellow;}
+	li.auth_3 { background-color: green;}
+	
+	.infohide {
+		display:none;
+	}
+
+#<?php echo $modal_id;?>_form1 label.error {
+    color: red;
+	font-size: 11px;
+	width: 100%;
+}
+#wrap input:([type="text"]), select {
+	width: 88%;
+	padding: 18px 6% 25px 6%;
+	border: 1px solid rgb(178, 178, 178);
+	-webkit-appearance: textfield;
+	-webkit-box-sizing: content-box;
+	-moz-box-sizing: content-box;
+	box-sizing: content-box;
+	-webkit-border-radius: 3px;
+	-moz-border-radius: 3px;
+	border-radius: 3px;
+	-webkit-box-shadow: 0px 1px 4px 0px rgba(168, 168, 168, 0.6) inset;
+	-moz-box-shadow: 0px 1px 4px 0px rgba(168, 168, 168, 0.6) inset;
+	box-shadow: 0px 1px 4px 0px rgba(168, 168, 168, 0.6) inset;
+	-webkit-transition: all 0.2s linear;
+	-moz-transition: all 0.2s linear;
+	-o-transition: all 0.2s linear;
+	transition: all 0.2s linear;
+}
+.formHeader {
+	font-size: 39px;
+	color: rgb(6, 106, 117);
+	padding: 20px 0 10px 0;
+	font-family: 'BebasNeueRegular','Arial Narrow',Arial,sans-serif;
+	text-align: center;
+	 text-transform: uppercase;
+}
+form {
+	padding: 18px 6% 25px 6%;
+	background: rgb(247, 247, 247);
+	border: 1px solid rgba(147, 184, 189,0.8);
+	-webkit-box-shadow: 0pt 2px 5px rgba(105, 108, 109, 0.7), 0px 0px 8px 5px rgba(208, 223, 226, 0.4) inset;
+	-moz-box-shadow: 0pt 2px 5px rgba(105, 108, 109, 0.7), 0px 0px 8px 5px rgba(208, 223, 226, 0.4) inset;
+	box-shadow: 0pt 2px 5px rgba(105, 108, 109, 0.7), 0px 0px 8px 5px rgba(208, 223, 226, 0.4) inset;
+	-webkit-box-shadow: 5px;
+	-moz-border-radius: 5px;
+	border-radius: 5px;
+	}
+#wrap {
+	right: 0px;
+	margin: 0px auto;
+	position: relative;
+}
+.formHeader::after {
+	content: ' ';
+	display: block;
+	width: 100%;
+	height: 2px;
+	margin-top: 10px;
+	background: -moz-linear-gradient(left, rgba(147,184,189,0) 0%, rgba(147,184,189,0.8) 20%, rgba(147,184,189,1) 53%, rgba(147,184,189,0.8) 79%, rgba(147,184,189,0) 100%);
+	background: -webkit-gradient(linear, left top, right top, color-stop(0%,rgba(147,184,189,0)), color-stop(20%,rgba(147,184,189,0.8)), color-stop(53%,rgba(147,184,189,1)), color-stop(79%,rgba(147,184,189,0.8)), color-stop(100%,rgba(147,184,189,0)));
+}
+#wrap p.button input, button {
+	cursor: pointer;
+	background: rgb(61, 157, 179);
+	padding: 4px 2px;
+	font-family: 'BebasNeueRegular','Arial Narrow',Arial,sans-serif;
+	color: #fff;
+	font-size: 20px;
+	border: 1px solid rgb(28, 108, 122);
+	margin-bottom: 10px;
+	text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+	-webkit-border-radius: 3px;
+	-moz-border-radius: 3px;
+	border-radius: 3px;
+	-webkit-box-shadow: 0px 1px 6px 4px rgba(0, 0, 0, 0.07) inset, 0px 0px 0px 3px rgb(254, 254, 254), 0px 5px 3px 3px rgb(210, 210, 210);
+	-moz-box-shadow: 0px 1px 6px 4px rgba(0, 0, 0, 0.07) inset, 0px 0px 0px 3px rgb(254, 254, 254), 0px 5px 3px 3px rgb(210, 210, 210);
+	box-shadow: 0px 1px 6px 4px rgba(0, 0, 0, 0.07) inset, 0px 0px 0px 3px rgb(254, 254, 254), 0px 5px 3px 3px rgb(210, 210, 210);
+	-webkit-transition: all 0.2s linear;
+	-moz-transition: all 0.2s linear;
+	-o-transition: all 0.2s linear;
+	transition: all 0.2s linear;
+}
+
+.labelisi {
+	font-family: "Courier New", Geneva, Monospace;
+	margin-left: 3%; 
+	width: 33%;
+	text-align: center;
+	vertical-align: top;
+	color: rgb(64, 92, 96);
+}
+.judul {
+	text-align: left;
+	width: 100%;
+	color: rgb(64, 92, 96);
+}
+				
+#wrap select{
+	/**padding: 5px 5px 2px 32px;*/
+	padding: 0px 0px 0px 10px;
+}
+p.signin.button{
+	text-align: right;
+	margin: 5px 0;
+	top: 10px;
+}
+.popup{
+	width: 100%;
+}
+.column-half, .column-full{
+	float: left;
+	position: relative;
+	width:100%;
+	-webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box
+}
+ul.ui-autocomplete {
+    z-index: 1100;
+} 
+.label-input{
+	font-family: "Courier New", Geneva, Monospace;
+	float: left;
+	width: 20%;
+	color: rgb(64, 92, 96);
+}
+.input-right{
+	margin-left: 25%;
+	width: 75%;
+}
+.signin button{
+	width: 18%;
+}

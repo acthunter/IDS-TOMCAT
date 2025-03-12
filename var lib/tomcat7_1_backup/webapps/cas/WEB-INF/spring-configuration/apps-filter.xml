@@ -1,0 +1,409 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Licensed to Apereo under one or more contributor license agreements. 
+	See the NOTICE file distributed with this work for additional information 
+	regarding copyright ownership. Apereo licenses this file to you under the 
+	Apache License, Version 2.0 (the "License"); you may not use this file except 
+	in compliance with the License. You may obtain a copy of the License at the 
+	following location: http://www.apache.org/licenses/LICENSE-2.0 Unless required 
+	by applicable law or agreed to in writing, software distributed under the 
+	License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS 
+	OF ANY KIND, either express or implied. See the License for the specific 
+	language governing permissions and limitations under the License. -->
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:c="http://www.springframework.org/schema/c" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:util="http://www.springframework.org/schema/util" xmlns:aop="http://www.springframework.org/schema/aop"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
+        http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+        ">
+	<description>
+		Custom Cas Apps Filter
+	</description>
+
+	<context:annotation-config />
+
+	<!-- <context:component-scan base-package="com.antruak.auth.principal" /> -->
+<!-- 	<context:component-scan base-package="com.antruak.tools.util" /> -->
+
+
+	<util:map id="sampleMap">
+		<entry key="attr1" value="key1" />
+		<entry key="attr2" value="val2" />
+	</util:map>
+
+	<util:map id="appsList" value-type="java.util.Map"
+		key-type="java.lang.String" map-class="java.util.HashMap">
+		
+		<entry key="icons">
+			<map>
+				<entry key="target" value="banc"/>
+				<entry key="desc" value="core banking"/>
+				<entry key="delivery" value="online"/>
+			</map>
+		</entry>
+		<entry key="prsk">
+			<map>
+				<entry key="target" value="periskop"/>
+				<entry key="desc" value="Periskop"/>
+				<entry key="delivery" value="pinmailer"/>
+			</map>
+		</entry>
+		<entry key="idminit">
+			<map>
+				<entry key="target" value="ldapAccount_oid"/>
+				<entry key="desc" value="Oracle ID"/>
+				<entry key="delivery" value="online"/>
+			</map>
+		</entry>
+		<entry key="eis">
+			<map>
+				<entry key="target" value="eis"/>
+				<entry key="desc" value="E I S"/>
+				<entry key="delivery" value="manual"/>
+			</map>
+		</entry>
+	</util:map>
+	
+<!-- 	<util:map id="appsDeliveryMode" value-type="java.util.List" -->
+<!-- 		key-type="java.lang.String" map-class="java.util.HashMap"> -->
+<!-- 		<entry> -->
+<!-- 			<key> -->
+<!-- 				<value>online</value> -->
+<!-- 			</key> -->
+<!-- 			<list> -->
+<!-- 				<value>banc</value> -->
+<!-- 				<value>oid</value> -->
+<!-- 			</list> -->
+
+<!-- 		</entry> -->
+<!-- 		<entry> -->
+<!-- 			<key> -->
+<!-- 				<value>pinmailer</value> -->
+<!-- 			</key> -->
+<!-- 			<list> -->
+<!-- 				<value>ibank</value> -->
+<!-- 				<value>periskop</value> -->
+<!-- 			</list> -->
+<!-- 		</entry> -->
+<!-- 	</util:map> -->
+
+	<util:map id="propKeyList">
+		<entry key="psn" value="periskop" />
+		<entry key="smpk" value="sistemsmpk" />
+		<entry key="ska" value="sistemsmpk" />
+	</util:map>
+
+	<util:map id="appsDeliveryMode">
+		<entry key="banc" value="online" />
+		<entry key="oid" value="online" />
+		<entry key="ska" value="pinmailer" />
+		<entry key="b24" value="manual" />
+		<entry key="periskop" value="manual" />
+	</util:map>
+
+	<bean id="bniCustomAttribute" class="com.antruak.apps.client.CustomAttribute">
+		<property name="attrMap" ref="sampleMap" />
+		<property name="propKeyList" ref="propKeyList" />
+		<property name="baseConfigDir" value="config/priv" />
+	</bean>
+
+	<bean id="clientViewFilter" class="com.antruak.apps.client.ClientFilter"
+		scope="request">
+		<property name="clientRegister" ref="clientRegister" />
+	</bean>
+
+	<bean id="clientRegister" class="com.antruak.apps.client.ClientRegister"
+		scope="singleton">
+		<property name="apps" ref="appsClientList" />
+	</bean>
+
+
+
+	<util:list id="appsClientList">
+		
+		<!--<bean class="com.antruak.apps.client.ClientApps">
+			<property name="key" value="idservice" />
+			<property name="enabled" value="true" />
+			<property name="icon" value="workflow.jpg" />
+			<property name="displayName" value="IDS-FROM-DEV" />
+			<property name="href" value="http://xpsso1.bni.co.id/idservice-dev/" />
+			<property name="attrs">
+				<list>
+					<value>idm</value>
+				</list>
+			</property>
+		</bean>
+		
+		<bean class="com.antruak.apps.client.ClientApps">
+			<property name="key" value="idservice" />
+			<property name="enabled" value="true" />
+			<property name="icon" value="workflow.jpg" />
+			<property name="displayName" value="IDS-FROM-PROD" />
+			<property name="href" value="http://xpsso1.bni.co.id/idservice-prod/" />
+			<property name="attrs">
+				<list>
+					<value>idm</value>
+				</list>
+			</property>
+		</bean>-->
+		
+		<bean class="com.antruak.apps.client.ClientApps">
+			<property name="key" value="idservice" />
+			<property name="enabled" value="true" />
+			<property name="icon" value="workflow.jpg" />
+			<property name="displayName" value="XIDS" />
+			<property name="href" value="http://10.45.38.2/xidservice/" />
+			<property name="attrs">
+				<list>
+					<value>idm</value>
+				</list>
+			</property>
+		</bean>
+	
+		<!--<bean class="com.antruak.apps.client.ClientApps">
+			<property name="enabled" value="true" />
+			<property name="icon" value="dummy-apps.png" />
+			<property name="displayName" value="dmy-apps" />
+			<property name="key" value="eis" />
+			<property name="href" value="/pcas7/" />
+			<property name="attrs">
+				<list>
+					<value>eis</value>
+				</list>
+			</property>
+		</bean>
+		<bean class="com.antruak.apps.client.ClientApps">
+			<property name="enabled" value="true" />
+			<property name="icon" value="dummy-apps.png" />
+			<property name="displayName" value="smpk" />
+			<property name="key" value="smpk" />
+			<property name="href" value="http://dnet.bni.co.id/SMPK/" />
+			<property name="attrs">
+				<list>
+					<value>smpk</value>
+				</list>
+			</property>
+		</bean>-->
+		 
+		
+		<!--
+		
+		<bean class="com.antruak.apps.client.ClientApps">
+			<property name="key" value="idservice" />
+			<property name="enabled" value="true" />
+			<property name="icon" value="workflow.jpg" />
+			<property name="displayName" value="IDS" />
+			<property name="href" value="http://psso1.bni.co.id/idservice/" />
+			<property name="attrs">
+				<list>
+					<value>idm</value>
+				</list>
+			</property>
+		</bean>
+		<bean class="com.antruak.apps.client.ClientApps">
+			<property name="enabled" value="true" />
+			<property name="icon" value="eis.jpg" />
+			<property name="displayName" value="EIS" />
+			<property name="key" value="eis" />
+			<property name="href" value="/eis_dev/" />
+			<property name="attrs">
+				<list>
+					<value>eis</value>
+				</list>
+			</property>
+		</bean>
+		<bean class="com.antruak.apps.client.ClientApps">
+			<property name="enabled" value="true" />
+			<property name="icon" value="periskop.png" />
+			<property name="displayName" value="PRS" />
+			<property name="key" value="periskop6" />
+			<property name="href" value="/periskop6/" />
+			<property name="attrs">
+				<list>
+					<value>periskop</value>
+				</list>
+			</property>
+		</bean>
+
+		<bean class="com.antruak.apps.client.ClientApps">
+			<property name="enabled" value="true" />
+			<property name="icon" value="periskop.png" />
+			<property name="displayName" value="PRS-7" />
+			<property name="key" value="periskop7" />
+			<property name="href" value="/periskop7/" />
+			<property name="attrs">
+				<list>
+					<value>psn</value>
+				</list>
+			</property>
+		</bean>
+
+		<bean class="com.antruak.apps.client.ClientApps">
+			<property name="icon" value="dummy-apps.png" />
+			<property name="displayName" value="Forum" />
+			<property name="key" value="forum" />
+			<property name="href" value="/periskop/" />
+			<property name="attrs">
+				<list>
+					<value>forum</value>
+				</list>
+			</property>
+		</bean>
+		<bean class="com.antruak.apps.client.ClientApps">
+			<property name="enabled" value="true" />
+			<property name="icon" value="dummy-apps.png" />
+			<property name="displayName" value="dmy-apps" />
+			<property name="key" value="eis" />
+			<property name="href" value="/pcas7/" />
+			<property name="attrs">
+				<list>
+					<value>eis</value>
+				</list>
+			</property>
+		</bean>
+
+		<bean class="com.antruak.apps.client.ClientApps">
+			<property name="enabled" value="true" />
+			<property name="icon" value="SRP.png" />
+			<property name="displayName" value="SRP-0" />
+			<property name="key" value="srp0" />
+			<property name="href" value="/srp/" />
+			<property name="attrs">
+				<list>
+					<value>srp</value>
+				</list>
+			</property>
+		</bean>
+
+		<bean class="com.antruak.apps.client.ClientApps">
+			<property name="enabled" value="true" />
+			<property name="icon" value="dummy-apps.png" />
+			<property name="displayName" value="SRP-2" />
+			<property name="key" value="srp2" />
+			<property name="href" value="http://apps2.bni.co.id/srp/" />
+			<property name="attrs">
+				<list>
+					<value>srp</value>
+				</list>
+			</property>
+		</bean>
+
+		<bean class="com.antruak.apps.client.ClientApps">
+			<property name="enabled" value="true" />
+			<property name="icon" value="dummy-apps.png" />
+			<property name="displayName" value="SRP-3" />
+			<property name="key" value="srp3" />
+			<property name="href" value="http://apps3.bni.co.id/srp/" />
+			<property name="attrs">
+				<list>
+					<value>srp</value>
+				</list>
+			</property>
+		</bean>
+		<bean class="com.antruak.apps.client.ClientApps">
+			<property name="enabled" value="true" />
+			<property name="icon" value="CRM.png" />
+			<property name="displayName" value="CRM" />
+			<property name="key" value="crm" />
+			<property name="href" value="/crm/" />
+			<property name="attrs">
+				<list>
+					<value>crm</value>
+				</list>
+			</property>
+		</bean>
+		
+		<bean class="com.antruak.apps.client.ClientApps">
+			<property name="enabled" value="true" />
+			<property name="icon" value="dummy-apps.png" />
+			<property name="displayName" value="CST" />
+			<property name="key" value="cst" />
+			<property name="href" value="http://apps3.bni.co.id/cst/" />
+			<property name="attrs">
+				<list>
+					<value>cst</value>
+				</list>
+			</property>
+		</bean>
+
+
+
+
+		<bean class="com.antruak.apps.client.ClientApps">
+			<property name="enabled" value="true" />
+			<property name="icon" value="BAR.png" />
+			<property name="displayName" value="BAR" />
+			<property name="key" value="bar" />
+			<property name="href" value="http://apps2.bni.co.id/bar/" />
+			<property name="attrs">
+				<list>
+					<value>bar</value>
+				</list>
+			</property>
+		</bean>
+
+		<bean class="com.antruak.apps.client.ClientApps">
+			<property name="icon" value="dummy-apps.png" />
+			<property name="displayName" value="sec" />
+			<property name="key" value="sec" />
+			<property name="href" value="http://apps2.bni.co.id/periskop/" />
+			<property name="attrs">
+				<list>
+					<value>sec</value>
+				</list>
+			</property>
+		</bean>
+
+
+		<bean class="com.antruak.apps.client.ClientApps">
+			<property name="enabled" value="true" />
+			<property name="icon" value="dummy-apps.png" />
+			<property name="displayName" value="smpk" />
+			<property name="key" value="smpk" />
+			<property name="href" value="http://dnet.bni.co.id/SMPK/" />
+			<property name="attrs">
+				<list>
+					<value>ska</value>
+				</list>
+			</property>
+		</bean>
+
+		<bean class="com.antruak.apps.client.ClientApps">
+			<property name="icon" value="dummy-apps.png" />
+			<property name="displayName" value="fsep" />
+			<property name="key" value="fsep" />
+			<property name="href" value="http://apps2.bni.co.id/periskop/" />
+			<property name="attrs">
+				<list>
+					<value>fsep</value>
+				</list>
+			</property>
+		</bean>
+		<bean class="com.antruak.apps.client.ClientApps">
+			<property name="icon" value="dummy-apps.png" />
+			<property name="displayName" value="ibank" />
+			<property name="key" value="ibank" />
+			<property name="href" value="http://apps2.bni.co.id/periskop/" />
+			<property name="attrs">
+				<list>
+					<value>ibank</value>
+				</list>
+			</property>
+		</bean>
+		<bean class="com.antruak.apps.client.ClientApps">
+			<property name="icon" value="dummy-apps.png" />
+			<property name="displayName" value="nska" />
+			<property name="key" value="nska" />
+			<property name="href" value="http://apps2.bni.co.id/periskop/" />
+			<property name="attrs">
+				<list>
+					<value>nska</value>
+				</list>
+			</property>
+		</bean>
+		
+		-->
+	</util:list>
+</beans>

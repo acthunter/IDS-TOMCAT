@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<flow xmlns="http://www.springframework.org/schema/webflow"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/webflow
+                          http://www.springframework.org/schema/webflow/spring-webflow-2.0.xsd"	start-state="init">
+
+	<input name="otpMode" type="java.lang.String" />
+	<input name="username" type="java.lang.String" />
+	<input name="securityChallenge" type="com.antruak.cas.pm.flow.SecurityChallenge"/>
+	
+	<action-state id="init">
+				<set name="flowScope.securityChallenge" value="securityChallenge"/>
+				<transition to="dispatch"/>
+	</action-state>
+	
+	<decision-state id="dispatch">
+		<if test="flowScope.otpMode eq 'email' or flowScope.otpMode eq 'emailgsm'" then="prepareEmailHash" />
+		<if test="flowScope.otpMode eq 'gsm' or flowScope.otpMode eq 'rsa' or flowScope.otpMode eq 'emailrsa' or flowScope.otpMode eq 'otp' or flowScope.otpMode eq 'otprsa'" then="prepareSessionToken" />
+	</decision-state>
+
+	<action-state id="prepareEmailHash">
+		<evaluate
+			expression="securityTokenHandlerAction.saveTokenChallenge(otpMode, username, flowRequestContext)" />
+		<transition to="casCheckTFAToken" />
+	</action-state>
+
+	<action-state id="prepareSessionToken">
+		<evaluate
+			expression="securityTokenHandlerAction.prepareSessionTokenChallenge(otpMode, username, flowRequestContext)" 
+			result="flowScope.tokenChallenge"/>
+		<transition to="continueSession" />
+	</action-state>
+	
+	<view-state id="casCheckTFAToken" view="casCheckTFAToken">
+		<transition to="prepareSuccess" />
+	</view-state>
+	<end-state id="prepareSuccess" />
+	<end-state id="continueSession" >
+		<output name="tokenChallenge" value="flowScope.tokenChallenge"/>
+	</end-state>
+	<end-state id="prepareFail" />
+	<global-transitions>
+		<transition to="prepareFail" on-exception="java.lang.Exception" />
+	</global-transitions>
+</flow>
+

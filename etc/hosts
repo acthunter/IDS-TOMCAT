@@ -1,0 +1,29 @@
+127.0.0.1	localhost ids.bni.co.id xpsso1.bni.co.id
+127.0.1.1	ketut-OptiPlex-780
+
+# The following lines are desirable for IPv6 capable hosts
+::1     ip6-localhost ip6-loopback
+fe00::0 ip6-localnet
+ff00::0 ip6-mcastprefix
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+
+#10.45.40.2     apps1.bni.co.id
+172.18.0.2	vb
+10.45.40.3	host_cas2
+#10.45.38.2	xpsso1.bni.co.id
+#10.45.38.2	host_cas2
+10.45.44.2	cdb.bni.co.id
+#192.168.131.83	cdb.bni.co.id
+
+#172.18.2.80	idmhost  pcdev80
+#172.18.3.162	sms.bni.co.id
+10.70.14.21	cas.bni.co.id voip.bni.co.id
+10.45.40.2	apps1.bni.co.id
+10.70.14.23 	cslave.bni.co.id	caslog.bni.co.id slave.bni.co.id
+
+#172.18.4.208	sso1.bni.co.id
+#172.18.3.92	pcdevRyanda
+
+192.168.98.52	psso1.bni.co.id
+192.168.98.65	dma.bni.co.id

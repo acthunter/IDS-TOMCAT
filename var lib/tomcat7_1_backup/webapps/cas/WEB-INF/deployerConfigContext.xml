@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:task="http://www.springframework.org/schema/task" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:p="http://www.springframework.org/schema/p" xmlns:c="http://www.springframework.org/schema/c"
+	xmlns:tx="http://www.springframework.org/schema/tx" xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:sec="http://www.springframework.org/schema/security"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd
+       http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security.xsd
+       http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+       http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.2.xsd">
+
+
+	<bean id="authenticationManager"
+		class="com.antruak.login.auth.process.CustomPolicyBasedAuthenticationManager"
+		p:notificationService-ref="notificationService">
+		<constructor-arg>
+			<map>
+
+				<entry key-ref="dbAuthHandler" value-ref="primaryPrincipalResolver" />
+				<entry key-ref="deviceAuthHandler" value-ref="primaryPrincipalResolver" />
+
+				<entry key-ref="proxyAuthenticationHandler" value-ref="proxyPrincipalResolver" />
+				<!--entry key-ref="primaryAuthenticationHandler" value-ref="primaryPrincipalResolver" 
+					/ -->
+				<entry key-ref="tokenAuthHandler" value-ref="primaryPrincipalResolver" />
+			</map>
+		</constructor-arg>
+
+		<!-- <property name="authenticationPolicy"> -->
+		<!-- <bean class="org.jasig.cas.authentication.NotPreventedAuthenticationPolicy" 
+			/> -->
+		<!-- </property> -->
+		<property name="authenticationPolicy">
+			<bean
+				class=" com.antruak.login.auth.process.CasRequiredHandlerAuthPolicy"
+				c:validateMap-ref="handlerAuthDependency" />
+		</property>
+	</bean>
+
+	<util:map id="handlerAuthDependency" value-type="java.util.List"
+		key-type="java.lang.String" map-class="java.util.HashMap">
+		<entry>
+			<key>
+				<value>QueryDatabaseAuthenticationHandler</value>
+			</key>
+			<list>
+				<value>DeviceAuthenticationHandler</value>
+			</list>
+		</entry>
+		<entry>
+			<key>
+				<value>TokenAuthenticationHandler</value>
+			</key>
+			<list>
+			</list>
+		</entry>
+	</util:map>
+
+
+	<bean id="proxyAuthenticationHandler"
+		class="org.jasig.cas.authentication.handler.support.HttpBasedServiceCredentialsAuthenticationHandler"
+		p:httpClient-ref="supportsTrustStoreSslSocketFactoryHttpClient" />
+
+	<bean id="primaryAuthenticationHandler"
+		class="org.jasig.cas.authentication.AcceptUsersAuthenticationHandler">
+		<property name="users">
+			<map>
+				<entry key="casuser" value="Mellon" />
+			</map>
+		</property>
+	</bean>
+
+	<bean id="proxyPrincipalResolver"
+		class="org.jasig.cas.authentication.principal.BasicPrincipalResolver" />
+
+
+
+	<bean id="primaryPrincipalResolver"
+		class="org.jasig.cas.authentication.principal.PersonDirectoryPrincipalResolver"
+		p:principalFactory-ref="principalFactory" p:attributeRepository-ref="attributeRepository" />
+
+
+
+	<!--select xl.loginid, xem.NPP, xen.name as xenname, xem.name, xp.name, 
+		xpre.*from xlogin xl inner join xemployee xem on xl.NPP = xem.NPP inner join 
+		xposition xp on xl.positionid = xp.positionid inner join xentitas xen on 
+		xen.entityid = xp.accoffice inner join xpreviledge xpre on xpre.priviledgeid=xp.priviledgeid 
+		where xl.loginid = "21303"; -->
+
+	<!--bean id="attributeRepository" class="org.jasig.services.persondir.support.jdbc.SingleRowJdbcPersonAttributeDao" -->
+	<bean id="attributeRepository"
+		class="com.antruak.person.dir.jdbc.SingleRowJdbcPersonAttributeDaoCustom">
+		<constructor-arg index="0" ref="dataSource" />
+		<constructor-arg index="1"
+			value="select  xl.loginid, xem.NPP,  xp.positionid as positionid, xen.name as xenname, xp.accoffice, xem.name as username, xp.name as xpname, xpre.* from xlogin xl 
+	inner join xemployee xem on xl.NPP = xem.NPP
+	inner join xposition xp on xl.positionid = xp.positionid 
+	inner join xentitas xen on xen.entityid = xp.accoffice
+	inner join xpreviledge xpre on xpre.positionid=xp.previledgeid
+	  where {0}" />
+		<property name="queryAttributeMapping">
+			<map>
+				<entry key="username" value="xl.loginid" />
+			</map>
+		</property>
+
+		<!-- result vs source -->
+		<property name="resultAttributeMapping">
+			<map>
+				<entry key="loginid" value="loginid" />
+				<entry key="eis" value="eis" />
+				<entry key="xenname" value="unitname" />
+
+				<entry key="xpname" value="xpname" />
+				<entry key="username" value="username" />
+				<entry key="idminit" value="idm" />
+				<entry key="positionid" value="positionid" />
+				<entry key="prsk" value="periskop" />
+				<entry key="forum" value="forum" />
+				<entry key="ims" value="ims" />
+				<entry key="sec" value="sec" />
+				<entry key="ska" value="ska" />
+				<entry key="fsep" value="fsep" />
+				<entry key="ibank" value="ibank" />
+				<entry key="internet" value="internet" />
+				<entry key="nska" value="nska" />
+				<entry key="srp" value="srp" />
+				<entry key="psn" value="psn" />
+				<entry key="crm" value="crm" />
+				<entry key="cst" value="cst" />
+				<entry key="smpk" value="smpk" />
+				<entry key="accoffice" value="accoffice" />
+				<entry key="bar" value="bar" />
+				<entry key="sco">
+					<list>
+						<value>sco</value>
+						<value>icons</value>
+					</list>
+				</entry>
+			</map>
+		</property>
+	</bean>
+
+	<!--bean id="attributeRepository" class="org.jasig.services.persondir.support.NamedStubPersonAttributeDao" 
+		p:backingMap-ref="attrRepoBackingMap" /> <util:map id="attrRepoBackingMap"> 
+		<entry key="uid" value="uid" /> <entry key="eduPersonAffiliation" value="eduPersonAffiliation" 
+		/> <entry key="groupMembership" value="groupMembership" /> <entry> <key><value>memberOf</value></key> 
+		<list> <value>faculty</value> <value>staff</value> <value>org</value> </list> 
+		</entry> </util:map -->
+
+	<!-- <bean name="dataSource" class="com.antruak.cas.util.CasBasicDataSource"> -->
+	<!-- <property name="url" value="jdbc:mysql://cdb.bni.co.id:3306/jbpm?autoReconnect=true" 
+		/> -->
+	<!-- <property name="driverClassName" value="com.mysql.jdbc.Driver" /> -->
+	<!-- <property name="username" value="jbpm" /> -->
+	<!-- <property name="passkey" value="cas.db.main.password" /> -->
+	<!-- </bean> -->
+
+
+
+	<bean name="dataSource" class="org.apache.commons.dbcp.BasicDataSource">
+		<property name="url"
+			value="jdbc:mysql://${cas.db.host}:3306/jbpm?autoReconnect=true" />
+		<property name="driverClassName" value="com.mysql.jdbc.Driver" />
+		<property name="username" value="${cas.db.main.username}" />
+		<property name="password" value="${cas.db.main.password}" />
+	</bean>
+
+	<bean name="auditDataSource" class="org.apache.commons.dbcp.BasicDataSource">
+		<property name="url"
+			value="jdbc:mysql://${audit.db.host}:3306/jbaudit?autoReconnect=true" />
+		<property name="driverClassName" value="com.mysql.jdbc.Driver" />
+		<property name="username" value="${cas.db.audit.username}" />
+		<property name="password" value="${cas.db.audit.password}" />
+	</bean>
+
+	<!-- <bean id="passwordEncoder" -->
+	<!-- class="org.jasig.cas.authentication.handler.DefaultPasswordEncoder" -->
+	<!-- c:encodingAlgorithm="MD5" p:characterEncoding="UTF-8" /> -->
+
+
+	<bean id="saltDao" class="com.antruak.sec.dao.P1SaltDaoImpl"
+		p:embedded="true" p:lowRandom="10" p:highRandom="20" p:dataSource-ref="dataSource">
+	</bean>
+
+	<bean id="passwordEncoder" class="com.antruak.sec.hash.encoder.CasEncoderP1" />
+
+	<bean id="secureProp" class="com.antruak.sec.util.SecurePropertiesImpl"
+		c:keyfile="k1.txt" c:propfile="xsecure.properties">
+		<property name="keyenv" value="key1key" />
+		<property name="systemid" value="5B0C86EC07BC008052CB786E074D00A0" />
+	</bean>
+
+	<!-- <bean id="passwordEncoder" class="com.antruak.login.auth.object.PlainPasswordEncoder" 
+		/> -->
+
+	<!-- <bean id="dbAuthHandler" -->
+	<!-- class="org.jasig.cas.adaptors.jdbc.QueryDatabaseAuthenticationHandler" -->
+	<!-- p:dataSource-ref="dataSource" p:passwordEncoder-ref="passwordEncoder" -->
+	<!-- p:sql="select xe.password from xemployee xe inner join xlogin xl on 
+		xl.npp = xe.npp where xl.loginid=?" /> -->
+
+	<bean id="dbAuthHandler"
+		class="com.antruak.login.auth.process.QueryDatabaseAuthenticationHandler"
+		p:dataSource-ref="dataSource" p:passwordEncoder-ref="passwordEncoder"
+		p:sql="select xe.password from xemployee xe inner join xlogin xl on xl.npp = xe.npp where xl.loginid=?" />
+
+	<!--bean id="dbAuthHandler" class="org.jasig.cas.adaptors.jdbc.SearchModeSearchDatabaseAuthenticationHandler" 
+		p:dataSource-ref="dataSource" p:passwordEncoder-ref="passwordEncoder" p:tableUsers="users" 
+		p:fieldUser="username" p:fieldPassword="password" / -->
+
+	<bean id="serviceRegistryDao" class="org.jasig.cas.services.JsonServiceRegistryDao"
+		c:configDirectory="${service.registry.config.location:classpath:services}" />
+
+	<!-- <bean id="auditTrailManager" -->
+	<!-- class="org.jasig.inspektr.audit.support.Slf4jLoggingAuditTrailManager" 
+		/> -->
+
+	<bean id="healthCheckMonitor" class="org.jasig.cas.monitor.HealthCheckMonitor"
+		p:monitors-ref="monitorsList" />
+
+	<util:list id="monitorsList">
+
+		<bean class="org.jasig.cas.monitor.SessionMonitor"
+			p:ticketRegistry-ref="ticketRegistry"
+			p:serviceTicketCountWarnThreshold="5000" p:sessionCountWarnThreshold="100000" />
+	</util:list>
+
+	<!-- lppe -->
+	<bean id="jloginDao" class="com.antruak.login.auth.object.JLoginDAOImpl"
+		p:passwordEncoder-ref="passwordEncoder" p:passwordMatcher-ref="passwordEncoder"
+		p:passwordExpireDays="${pm.enforcement.password.expiration:30}"
+		p:maxFailAttemptBeforeLock="${ldap.pm.lockout.incorrect-attempts-beforelock:5}"
+		p:maxFailAttemptBeforeDelay="${ldap.pm.lockout.incorrect-attempts-beforedelay:3}"
+		p:allowUsedPassword="false" p:appsList-ref="appsList">
+		<property name="dataSource" ref="dataSource" />
+	</bean>
+
+	<bean id="jsecurityDao" class="com.antruak.login.auth.object.JSecuritySimpleDAOImpl">
+		<property name="dataSource" ref="dataSource" />
+	</bean>
+
+	<bean id="smsPortDAO" class="com.antruak.http.service.SMSPortDAOImpl">
+		<property name="dataSource" ref="dataSource" />
+	</bean>
+
+	<bean id="jtokenDao" class="com.antruak.mail.service.JTokenDAOImpl">
+		<property name="dataSource" ref="dataSource" />
+		<property name="tokenlifetime" value="1 0:10:0" />
+		<property name="life" value="2" />
+		<property name="detectIp" value="false" />
+		<property name="tokenAuthMap" ref="tokenAuthMap" />
+		<property name="secretRepo" ref="secretRepo" />
+	</bean>
+
+	<bean id="auditCleanupCriteria"
+		class="org.jasig.inspektr.audit.support.MaxAgeWhereClauseMatchCriteria">
+		<constructor-arg index="0" value="180" />
+	</bean>
+
+	<bean id="auditTrailManager" class="org.jasig.inspektr.audit.support.JdbcAuditTrailManager"
+		c:transactionTemplate-ref="inspektrTransactionTemplate"
+		p:dataSource-ref="auditDataSource" p:cleanupCriteria-ref="auditCleanupCriteria" />
+
+	<bean id="inspektrTransactionManager"
+		class="org.springframework.jdbc.datasource.DataSourceTransactionManager"
+		p:dataSource-ref="dataSource" />
+
+	<bean id="inspektrTransactionTemplate"
+		class="org.springframework.transaction.support.TransactionTemplate"
+		p:transactionManager-ref="inspektrTransactionManager"
+		p:isolationLevelName="ISOLATION_READ_COMMITTED"
+		p:propagationBehaviorName="PROPAGATION_REQUIRED" />
+
+
+
+	<bean id="deviceAuthHandler"
+		class="com.antruak.login.auth.process.DeviceAuthenticationHandler" p:exceptFinger="BackEndSystem"/>
+
+
+	<bean id="tokenAuthHandler" class="com.antruak.cas.pm.flow.TokenAuthenticationHandler"
+		p:maxDrift="60000" p:keystore-ref="jsonKeystore" />
+
+	<bean class="edu.clayton.cas.support.token.keystore.JSONKeystore"
+		id="jsonKeystore" p:storeFile="${cas.tokenkey.uri}" />
+
+	<bean id="tokenPrincipalResolver"
+		class="edu.usf.cims.cas.support.token.authentication.principal.TokenCredentialsToPrincipalResolver" />
+
+
+	<bean id="jsession" class="com.antruak.login.auth.object.JSessionDAOImpl"
+		c:ticketRegistry-ref="ticketRegistry">
+		<property name="dataSource" ref="auditDataSource" />
+		<property name="expireTime" value="${cas.session.lock.expire:'0:10:0'}" />
+	</bean>
+
+
+	<bean id="sessionControlAction" class="com.antruak.login.auth.process.SessionControlAction">
+		<property name="jsessionDAO" ref="jsession" />
+	</bean>
+
+	<!-- <task:scheduled-tasks scheduler="myScheduler"> -->
+	<!-- <task:scheduled ref="smsService" method="scheduler" -->
+	<!-- fixed-delay="5000" initial-delay="5000" /> -->
+
+
+
+	<!-- </task:scheduled-tasks> -->
+
+	<!-- <task:scheduler id="myScheduler" pool-size="1" /> -->
+
+
+</beans>
+

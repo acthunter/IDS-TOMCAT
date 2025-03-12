@@ -1,0 +1,512 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Licensed to Apereo under one or more contributor license agreements. 
+	See the NOTICE file distributed with this work for additional information 
+	regarding copyright ownership. Apereo licenses this file to you under the 
+	Apache License, Version 2.0 (the "License"); you may not use this file except 
+	in compliance with the License. You may obtain a copy of the License at the 
+	following location: http://www.apache.org/licenses/LICENSE-2.0 Unless required 
+	by applicable law or agreed to in writing, software distributed under the 
+	License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS 
+	OF ANY KIND, either express or implied. See the License for the specific 
+	language governing permissions and limitations under the License. -->
+<flow xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.springframework.org/schema/webflow"
+	xsi:schemaLocation="http://www.springframework.org/schema/webflow
+                          http://www.springframework.org/schema/webflow/spring-webflow.xsd">
+
+	<var name="credential" class="com.antruak.login.auth.entity.CasEndPointCredential" />
+	<input name="mtoken" type="java.lang.String" />
+	<on-start>
+		<evaluate expression="initialFlowSetupAction" />
+	</on-start>
+
+	<action-state id="ticketGrantingTicketCheck">
+		<evaluate expression="ticketGrantingTicketCheckAction" />
+		<!-- <transition on="notExists" to="gatewayRequestCheck" /> -->
+		<transition on="notExists" to="directExternalDispatcher" />
+		<transition on="invalid" to="terminateSession" />
+		<transition on="valid" to="paramDispatcher">
+			<set name="flowScope.credentials"
+				value="passwordPolicyAction.getCredentials(genericSuccessViewAction.getAuthenticationPrincipal(flowScope.ticketGrantingTicketId))" />
+		</transition>
+	</action-state>
+
+	<action-state id="directExternalDispatcher">
+		<evaluate expression="requestParameters.fname" />
+		<transition on="emailToken" to="passwordManager">
+			<set name="flashScope.pmTask" value="'validateToken'" />
+			<set name="conversationScope.tokenType" value="'email'" />
+		</transition>
+		<transition on="emailgsmToken" to="passwordManager">
+			<set name="flashScope.pmTask" value="'validateToken'" />
+			<set name="conversationScope.tokenType" value="'emailgsm'" />
+		</transition>
+		<transition on="reset_password" to="passwordManager">
+			<set name="flashScope.pmTask" value="'reset_password'" />
+			<!-- <set name="conversationScope.tokenType" value="'new'" /> -->
+		</transition>
+		<transition on="jwt" to="tokenAuthPrecheck">
+			<evaluate expression="tokenAuthAction.setCredential(flowRequestContext)"/>
+		</transition>
+		<transition to="gatewayRequestCheck" />
+	</action-state>
+
+	<action-state id="paramDispatcher">
+		<evaluate expression="requestParameters.fname" />
+		<transition on="cpwd" to="passwordManager">
+			<set name="flashScope.pmTask" value="'changePassword'" />
+		</transition>
+		<transition on="resetTarget" to="targetManager">
+			<set name="flashScope.pmTask" value="'gsmToken'" />
+			<set name="conversationScope.tokenType" value="'gsm'" />
+		</transition>
+		<transition on="resetSeed" to="seedManager">
+			<set name="flashScope.pmTask" value="'gsmToken'" />
+			<set name="conversationScope.tokenType" value="'gsm'" />
+		</transition>
+		<transition on="selectOtp" to="otpManager_precheck">
+
+		</transition>
+		<transition to="hasServiceCheck" />
+	</action-state>
+
+	<action-state id="tokenAuthPrecheck">
+		<evaluate
+			expression="sessionControlAction.submit(flowRequestContext,messageContext)" />
+		<transition on="success" to="tokenPrecheckPass" />
+		<transition to="handleAuthenticationFailure" />
+	</action-state>
+	
+	<action-state id="tokenPrecheckPass">
+		<evaluate expression="tokenAuthAction" />
+<!-- 		<transition on="success" to="sendTicketGrantingTicket" /> -->
+		<transition on="success" to="tokenSuccess" >
+			<evaluate expression="sendTicketGrantingTicketAction" />
+		</transition>
+		<transition on="error" to="helpDeskView" />
+	</action-state>
+	
+	<decision-state id="tokenSuccess">
+		<if test="flowScope.qrservice != null" then="tokenRedirect_1" else="redirectToLogin"/>
+	</decision-state>
+	
+	<end-state id="tokenRedirect_1"
+		view="externalRedirect:login?service=#{flowScope.qrservice}" />
+	
+	<!-- lppe -->
+	<action-state id="passwordPolicyCheck">
+		<evaluate expression="passwordPolicyAction" />
+		<transition on="showWarning" to="passwordExpireCheck" />
+		<transition on="authenticationFailure" to="handleAuthenticationFailure" />
+		<transition on="actionRequired" to="passwordExpireCheck">
+			<evaluate expression="currentEvent.attributes" result="flashScope.actionRequired" />
+		</transition>
+		<transition on="success" to="sendTicketGrantingTicket" />
+		<transition on="error" to="viewLoginForm" />
+	</action-state>
+
+	<decision-state id="passwordExpireCheck">
+		<if test="flashScope.expireHours lt 0" then="pwdWarningPolicyUrlCheck"
+			else="passwordServiceCheck" />
+	</decision-state>
+
+	<action-state id="passwordServiceCheck">
+		<evaluate expression="sendTicketGrantingTicketAction" />
+		<transition to="passwordPostCheck" />
+	</action-state>
+
+	<decision-state id="passwordPostCheck">
+		<if test="flowScope.service != null" then="warnPassRedirect"
+			else="pwdWarningPolicyUrlCheck" />
+	</decision-state>
+
+	<action-state id="warnPassRedirect">
+		<evaluate expression="generateServiceTicketAction" />
+		<transition on="success" to="pwdWarningPolicyUrlCheck" />
+		<transition on="error" to="generateLoginTicket" />
+		<transition on="gateway" to="gatewayServicesManagementCheck" />
+	</action-state>
+
+	<action-state id="pwdWarningPolicyUrlCheck">
+		<evaluate expression="passwordPolicyAction.getPasswordPolicyUrl()"
+			result="flowScope.passwordPolicyUrl" />
+		<evaluate expression="flowScope.passwordPolicyUrl eq 'pm'" />
+		<transition on="yes" to="passwordManager">
+			<set name="flashScope.pmTask" value="'passwordWarn'" />
+		</transition>
+		<transition on="no" to="pwdWarningPostView" />
+	</action-state>
+
+	<end-state id="pwdWarningPostView" view="casWarnPassView" />
+
+
+	<subflow-state id="passwordManager" subflow="passwordManager">
+		<input name="credentials" value="flowScope.credentials"
+			type="org.jasig.cas.authentication.principal.Credentials" />
+		<input name="service" value="flowScope.service" type="java.lang.String" />
+		<input name="pmTask" value="flashScope.pmTask" type="java.lang.String" />
+
+		<input name="expireHours" value="flowScope.expireHours" type="java.lang.Integer" />
+		<transition on="pmExit" to="redirectToLogin" />
+		<transition on="pmlogout" to="redirectLogout" />
+		<transition on="passwordSet" to="passwordSet" />
+		<transition on="helpDeskView" to="helpDeskView" />
+		<transition on-exception="java.lang.Exception" to="helpDeskView" />
+	</subflow-state>
+
+	<subflow-state id="targetManager" subflow="targetManager">
+		<input name="credentials" value="flowScope.credentials"
+			type="org.jasig.cas.authentication.principal.Credentials" />
+		<input name="reqtype" value="'resetPassword'" type="java.lang.String" />
+		<!-- <input name="target" value="'banc'" type="java.lang.String" /> -->
+		<input name="mode" value="'gsm'" type="java.lang.String" />
+
+		<transition on="success" to="passwordSet">
+			<set name="flashScope.pwdTarget" value="'ok'" />
+		</transition>
+		<transition on="fail" to="helpDeskView" />
+	</subflow-state>
+
+	<subflow-state id="seedManager" subflow="otpSeedManager">
+		<input name="credentials" value="flowScope.credentials"
+			type="org.jasig.cas.authentication.principal.Credentials" />
+		<input name="reqtype" value="'resetPassword'" type="java.lang.String" />
+		<!-- <input name="target" value="'banc'" type="java.lang.String" /> -->
+		<input name="mode" value="'gsm'" type="java.lang.String" />
+
+		<transition on="success" to="passwordSet">
+			<set name="flashScope.pwdTarget" value="'ok'" />
+		</transition>
+		<transition on="fail" to="helpDeskView" />
+	</subflow-state>
+
+	<subflow-state id="otpManager_precheck" subflow="priviledgeCheck">
+		<input name="credentials" value="flowScope.credentials"
+			type="org.jasig.cas.authentication.principal.Credentials" />
+		<input name="level" value="1" type="java.lang.Integer" />
+		<input name="useOtpMode" value="'gsm'" type="java.lang.String" />
+
+		<transition on="success" to="otpManager">
+		</transition>
+		<transition on="fail" to="fail" />
+	</subflow-state>
+
+	<view-state id="otpManager" view="casSelectTokenModel">
+		<on-render>
+			<evaluate
+				expression="securityTokenHandlerAction.getOTPMode(flowScope.credentials.username)"
+				result="flowScope.currentOTPMode" />
+			<evaluate
+				expression="securityTokenHandlerAction.getAvailableOTPMode(flowScope.credentials.username, flowRequestContext)"
+				result="flowScope.tokenModeOption" />
+		</on-render>
+		<transition on="submit" to="redirectToLogin">
+			<evaluate
+				expression="securityTokenHandlerAction.updateOTPMode(flowScope.credentials.username, requestParameters.otpMode)"></evaluate>
+		</transition>
+		<transition to="redirectToLogin"></transition>
+	</view-state>
+
+
+	<end-state id="passwordSet" view="casPmChangedPassword" />
+
+	<end-state id="helpDeskView" view="casPmHelpDesk" />
+
+	<!-- leep -->
+
+	<action-state id="terminateSession">
+		<evaluate expression="terminateSessionAction.terminate(flowRequestContext)" />
+		<transition to="gatewayRequestCheck" />
+	</action-state>
+
+	<decision-state id="gatewayRequestCheck">
+		<if
+			test="requestParameters.gateway != '' and requestParameters.gateway != null and flowScope.service != null"
+			then="gatewayServicesManagementCheck" else="serviceAuthorizationCheck" />
+	</decision-state>
+
+	<decision-state id="hasServiceCheck">
+		<if test="flowScope.service != null" then="renewRequestCheck" else="viewGenericLoginSuccess" />
+	</decision-state>
+
+	<decision-state id="renewRequestCheck">
+		<if
+			test="requestParameters.renew != '' and requestParameters.renew != null"
+			then="serviceAuthorizationCheck" else="generateServiceTicket" />
+	</decision-state>
+
+	<!-- Do a service authorization check early without the need to login first -->
+	<action-state id="serviceAuthorizationCheck">
+		<evaluate expression="serviceAuthorizationCheck" />
+		<transition to="generateLoginTicket" />
+	</action-state>
+
+	<!-- The "warn" action makes the determination of whether to redirect directly 
+		to the requested service or display the "confirmation" page to go back to 
+		the server. -->
+	<decision-state id="warn">
+		<if test="flowScope.warnCookieValue" then="showWarningView" else="redirect" />
+	</decision-state>
+
+	<!-- <action-state id="startAuthenticate"> <action bean="x509Check" /> <transition 
+		on="success" to="sendTicketGrantingTicket" /> <transition on="warn" to="warn" 
+		/> <transition on="error" to="generateLoginTicket" /> </action-state> -->
+
+	<action-state id="generateLoginTicket">
+		<evaluate expression="generateLoginTicketAction.generate(flowRequestContext)" />
+		<transition on="generated" to="viewLoginForm" />
+	</action-state>
+
+	<view-state id="viewLoginForm" view="casLoginView" model="credential">
+		<binder>
+			<binding property="username" required="true" />
+			<binding property="password" required="true" />
+			<binding property="fingerprint" required="true" />
+			<binding property="fingerprint" required="true" />
+		</binder>
+		<on-entry>
+			<set name="viewScope.commandName" value="'credential'" />
+			<!-- <evaluate expression="samlMetadataUIParserAction" /> -->
+		</on-entry>
+
+		<transition on="submit" bind="true" validate="true" to="realSubmit">
+			<set name="credential.remoteAddr" value="sessionControlAction.getRemoteAddr(flowRequestContext)" />
+		</transition>
+
+		<transition on="forgotPassword" to="passwordManager"
+			validate="false">
+			<set name="flashScope.pmTask" value="'reset_password'" />
+		</transition>
+
+		<transition on="qrlogin" to="qrloginView"
+			validate="false">
+		</transition>
+
+		<transition on="activate" to="passwordManager" validate="false">
+			<set name="flashScope.pmTask" value="'activate'" />
+		</transition>
+
+		<transition on="gsmToken" to="passwordManager" validate="false">
+			<set name="flashScope.pmTask" value="'gsmToken'" />
+			<set name="conversationScope.tokenType" value="'gsm'" />
+		</transition>
+
+		<transition on="emailToken" to="passwordManager" validate="false">
+			<set name="flashScope.pmTask" value="'emailToken'" />
+		</transition>
+
+		<transition on="forgotPasswordQr" to="passwordManager"
+			validate="false">
+			<set name="flashScope.pmTask" value="'forgotPasswordQr'" />
+		</transition>
+	</view-state>
+
+
+	<end-state id="qrloginView" view="externalRedirect:#{casProperties['cas.token.qrlogin.url']}?service=#{requestParameters.service}" />
+<!-- 	<view-state id="qrloginView" view="qrloginView"> -->
+		
+<!-- 	</view-state> -->
+	
+	<action-state id="realSubmit">
+		<evaluate
+			expression="sessionControlAction.submit(flowRequestContext,messageContext)" />
+		<transition on="success" to="realSubmitSessionPass" />
+		<transition to="handleAuthenticationFailure" />
+	</action-state>
+
+<!-- 	<action-state id="realSubmit"> -->
+<!-- 		<on-entry> -->
+<!-- 			<evaluate expression="sessionControlAction.getDeviceCredential(flowRequestContext)" result="flowScope.deviceCredential"></evaluate> -->
+<!-- 		</on-entry> -->
+<!-- 		<evaluate -->
+<!-- 			expression="authenticationViaFormAction.submit(flowRequestContext, flowScope.deviceCredential, messageContext)" /> -->
+<!-- 		<transition on="success" to="realSubmitSessionPass" /> -->
+<!-- 		<transition to="handleAuthenticationFailure" /> -->
+<!-- 	</action-state> -->
+
+	<action-state id="realSubmitSessionPass">
+		<evaluate
+			expression="authenticationViaFormAction.submit(flowRequestContext, flowScope.credential, messageContext)" />
+		<transition on="warn" to="warn" />
+		<!-- To enable AUP workflows, replace the 'success' transition with the 
+			following: <transition on="success" to="acceptableUsagePolicyCheck" /> -->
+		<!-- <transition on="success" to="sendTicketGrantingTicket" /> -->
+		<transition on="success" to="passwordPolicyCheck" />
+		<transition on="successWithWarnings" to="showMessages" />
+		<transition on="authenticationFailure" to="handleAuthenticationFailure">
+			<set name="flashScope.casErrorType" value="currentEvent.attributes.error" />
+		</transition>
+		<transition on="error" to="generateLoginTicket" />
+	</action-state>
+
+	<!-- Enable AUP flow <action-state id="acceptableUsagePolicyCheck"> <evaluate 
+		expression="acceptableUsagePolicyFormAction.verify(flowRequestContext, flowScope.credential, 
+		messageContext)" /> <transition on="success" to="sendTicketGrantingTicket" 
+		/> <transition to="acceptableUsagePolicyView" /> </action-state> <view-state 
+		id="acceptableUsagePolicyView" view="casAcceptableUsagePolicyView"> <transition 
+		on="submit" to="aupAcceptedAction" /> <transition to="generateLoginTicket" 
+		/> </view-state> <action-state id="aupAcceptedAction"> <evaluate expression="acceptableUsagePolicyFormAction.submit(flowRequestContext, 
+		flowScope.credential, messageContext)" /> <transition on="error" to="generateLoginTicket" 
+		/> <transition on="success" to="sendTicketGrantingTicket" /> </action-state> -->
+
+	<view-state id="showMessages" view="casLoginMessageView">
+		<on-entry>
+			<evaluate expression="sendTicketGrantingTicketAction" />
+			<set name="requestScope.messages" value="messageContext.allMessages" />
+		</on-entry>
+		<transition on="proceed" to="serviceCheck" />
+	</view-state>
+
+	<action-state id="handleAuthenticationFailure">
+
+		<evaluate
+			expression="authenticationExceptionHandler.handle(flowRequestContext, currentEvent.attributes.error, messageContext)" />
+		<transition on="AccountDisabledException" to="casAccountDisabledView" />
+		<transition on="AccountLockedException" to="casAccountLockedView" />
+		<transition on="AccountPasswordMustChangeException" to="casMustChangePassView" />
+		<transition on="CredentialExpiredException" to="casGeneralLoginError">
+			<set name="flashScope.casErrorType" value="'credentialExpired'" />
+		</transition>
+		<transition on="CasExpiredException" to="casExpiredPassView">
+			<set name="flashScope.casExpiredDetail" value="currentEvent.attributes.error" />
+		</transition>
+		<transition on="InvalidLoginLocationException" to="casBadWorkstationView" />
+		<transition on="LoginConfirmationException" to="casBadWorkstationView" />
+		<transition on="InvalidLoginTimeException" to="casBadHoursView" />
+		<transition on="FailedLoginException" to="generateLoginTicket" />
+		<transition on="AccountNotFoundException" to="generateLoginTicket" />
+		<transition on="UNKNOWN" to="generateLoginTicket" />
+		<transition on="IdLoginOtherTermException" to="casIdLoginOtherTerm" />
+		<transition on="TermUsedByOtherIdException" to="casTermByOtherUserId" />
+		<transition on="LoginDelayException" to="casLoginDelayView" />
+		<transition to="casGeneralLoginError">
+
+		</transition>
+	</action-state>
+
+	<action-state id="sendTicketGrantingTicket">
+		<evaluate expression="sendTicketGrantingTicketAction" />
+		<transition to="serviceCheck" />
+	</action-state>
+
+	<decision-state id="serviceCheck">
+		<if test="flowScope.service != null" then="generateServiceTicket"
+			else="viewGenericLoginSuccess" />
+	</decision-state>
+
+	<action-state id="generateServiceTicket">
+		<evaluate expression="generateServiceTicketAction" />
+		<transition on="success" to="warn" />
+		<transition on="authenticationFailure" to="handleAuthenticationFailure" />
+		<transition on="error" to="generateLoginTicket" />
+		<transition on="gateway" to="gatewayServicesManagementCheck" />
+	</action-state>
+
+	<action-state id="gatewayServicesManagementCheck">
+		<evaluate expression="gatewayServicesManagementCheck" />
+		<transition on="success" to="redirect" />
+	</action-state>
+
+	<action-state id="redirect">
+		<evaluate
+			expression="flowScope.service.getResponse(requestScope.serviceTicketId)"
+			result-type="org.jasig.cas.authentication.principal.Response" result="requestScope.response" />
+		<transition to="postRedirectDecision" />
+	</action-state>
+
+	<decision-state id="postRedirectDecision">
+		<if test="requestScope.response.responseType.name() == 'POST'"
+			then="postView" else="redirectView" />
+	</decision-state>
+
+	<!-- the "viewGenericLoginSuccess" is the end state for when a user attempts 
+		to login without coming directly from a service. They have only initialized 
+		their single-sign on session. -->
+
+	<end-state id="viewGenericLoginSuccess" view="casGenericSuccessView">
+		<on-entry>
+			<evaluate
+				expression="genericSuccessViewAction.getAuthenticationPrincipal(flowScope.ticketGrantingTicketId)"
+				result="requestScope.principal" result-type="org.jasig.cas.authentication.principal.Principal" />
+			<evaluate
+				expression="clientViewFilter.filterApplicationList(requestScope.principal.attributes)"
+				result="requestScope.clientViewRegister" />
+		</on-entry>
+	</end-state>
+
+
+	<!-- The "showWarningView" end state is the end state for when the user 
+		has requested privacy settings (to be "warned") to be turned on. It delegates 
+		to a view defines in default_views.properties that display the "Please click 
+		here to go to the service." message. -->
+	<end-state id="showWarningView" view="casConfirmView" />
+
+
+	<!-- Password policy failure states -->
+	<end-state id="abstactPasswordChangeView">
+		<on-entry>
+			<set name="flowScope.passwordPolicyUrl" value="passwordPolicyAction.passwordPolicyUrl" />
+		</on-entry>
+	</end-state>
+
+
+	<end-state id="casGeneralLoginError" view="casGeneralLoginError" />
+
+	<end-state id="casExpiredPassView" view="casExpiredPassView"
+		parent="#abstactPasswordChangeView" />
+
+	<end-state id="casMustChangePassView" view="casMustChangePassView"
+		parent="#abstactPasswordChangeView" />
+	<end-state id="casAccountDisabledView" view="casAccountDisabledView" />
+	<end-state id="casLoginDelayView" view="casLoginDelayView" />
+	<end-state id="casAccountLockedView" view="casAccountLockedView" />
+	<end-state id="casBadHoursView" view="casBadHoursView" />
+	<end-state id="casBadWorkstationView" view="casBadWorkstationView" />
+	<end-state id="casIdLoginOtherTerm" view="casIdLoginOtherTerm" />
+	<end-state id="casTermByOtherUserId" view="casTermByOtherUserId" />
+
+	<end-state id="postView" view="postResponseView">
+		<on-entry>
+			<set name="requestScope.parameters" value="requestScope.response.attributes" />
+			<set name="requestScope.originalUrl" value="flowScope.service.id" />
+		</on-entry>
+	</end-state>
+
+	<!-- The "redirect" end state allows CAS to properly end the workflow while 
+		still redirecting the user back to the service required. -->
+	<end-state id="redirectView" view="externalRedirect:#{requestScope.response.url}" />
+
+	<end-state id="viewServiceErrorView" view="serviceErrorView" />
+
+	<end-state id="redirectLogout" view="externalRedirect:logout" />
+
+	<decision-state id="redirectToLogin">
+		<if test="flowScope.service != null" then="redirectToLoginWithService"
+			else="redirectToLoginNoService" />
+	</decision-state>
+
+	<end-state id="redirectToLoginWithService"
+		view="externalRedirect:login?service=${flowScope.service}" />
+	<end-state id="redirectToLoginNoService" view="externalRedirect:login" />
+
+	<decision-state id="serviceUnauthorizedCheck">
+		<if test="flowScope.unauthorizedRedirectUrl != null" then="viewRedirectToUnauthorizedUrlView"
+			else="viewServiceErrorView" />
+	</decision-state>
+
+	<end-state id="viewRedirectToUnauthorizedUrlView"
+		view="externalRedirect:#{flowScope.unauthorizedRedirectUrl}" />
+	<end-state id="viewServiceSsoErrorView" view="serviceErrorSsoView" />
+
+	<global-transitions>
+		<transition to="viewLoginForm"
+			on-exception="org.jasig.cas.services.UnauthorizedSsoServiceException" />
+		<transition to="viewServiceErrorView"
+			on-exception="org.springframework.webflow.execution.repository.NoSuchFlowExecutionException" />
+		<transition to="serviceUnauthorizedCheck"
+			on-exception="org.jasig.cas.services.UnauthorizedServiceException" />
+		<transition to="serviceUnauthorizedCheck" on-exception="java.lang.Exception" />
+		<transition on-exception="java.lang.Exception" to="helpDeskView" />
+	</global-transitions>
+
+
+</flow>

@@ -1,0 +1,122 @@
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+
+class XMain extends CI_Controller {
+
+	public function __construct()
+	{
+		parent::__construct();
+		$this->load->database();
+		$this->initparam();		
+	}
+	private function initparam(){
+		$this->apps_list = array(
+				"icons"=>array("target"=>"banc", "desc"=>"apps core banking", "delivery"=>"online"),
+				"idminit"=>array("target"=>"idminit", "desc"=>"apps Identity Management", "delivery"=>"online"),
+				"prsk"=>array("target"=>"periskop", "desc"=>"Periskop", "delivery"=>"manual"),
+				"psn"=>array("target"=>"Email", "desc"=>"Email bni.co.id", "delivery"=>"pinmailer"),
+			);
+	}
+	public function index()
+	{	
+		$myid = $this->cas->getmycas_login(array('idm_ithde','idm_appr','idm_init','idm_super','idm_idadmin'));
+		$this->page->template('enduser_tpl');
+		$this->page->view('v_resetpass');
+	}
+	function npp(){
+		$myid = $this->session->userdata('pengguna')->loginid;
+		echo json_encode($myid);
+	}
+	public function handle(){
+		$fmdata = $this->input->post();
+		if ($fmdata == null){
+			return $this->index();
+		} else {
+			$uniqid = uniqid("");
+			if ($fmdata['reqtype'] == 'setTarget' ){
+				//input target, npp, mobileNumber
+				$rdetail = array("npp"=>$fmdata['npp'], "target"=>$fmdata['target'], "mobileNumber"=>$fmdata['mobileNumber'], "userclass"=>$fmdata['userclass']);
+				$sparam = (object) array();
+				$sparam->npp = $fmdata['npp'];
+				$sparam->target = $fmdata['target'];
+				$sparam->mobileNumber = $fmdata['mobileNumber'];
+				
+				$_SESSION['param'] = $sparam;
+				$sdata = array("reqtype"=>$fmdata['reqtype'], "detail"=>json_encode($rdetail));
+				$this->load->library('restclient', array());
+				$dest_url = $this->config->item('cas_url') . 'frontend/target';
+				
+				log_message('debug', print_r(array("handle.sdata"=>$sdata), TRUE));
+				 
+				$breply = $this->restclient->post($dest_url, $sdata);
+				//log_message('debug', print_r($breply, TRUE));
+				log_message('debug', print_r(array("breply "=>$breply), TRUE));
+				//$breply = array("res":"ok");
+				//$breply = array("res"=>"err mobile number tidak ada", "data"=>$fmdata);
+				
+			} else{
+				$myparam = array("reqtype"=>$fmdata['reqtype'], 'npp'=>$_SESSION['param']->npp,  'target'=>$_SESSION['param']->target, 'mobileNumber'=>$_SESSION['param']->mobileNumber);
+				log_message('debug', print_r(array("getpass.myparam.1"=>$myparam), TRUE));				
+				$myparam['pass'] = $fmdata['pass'];
+				
+				/* $sesdata = $this->session->userdata('passRetMode');
+				$mode = "gsm";
+				if ($sesdata != null){
+					$mode = $sesdata['mode'];
+					if ($sesdata['ehash'] != null)
+						$myparam['ehash'] = $sesdata['ehash'];
+				}
+				$myparam['mode'] = $sesdata['mode']; */
+				
+				log_message('debug', print_r(array("getpass.input.1"=>$myparam), TRUE));
+				
+				$this->load->library('restclient', array());
+				$dest_url = $this->config->item('xcas_url') . 'cas/idm';
+				log_message('debug', print_r(array("getpass.input.2"=>$dest_url), TRUE));
+				$breply = $this->restclient->get($dest_url, $myparam);
+				log_message('debug', print_r(array("getpass.user_h"=>$breply), TRUE));
+			} 
+			  
+			echo json_encode($breply);
+		}
+	}
+	
+	public function euser_handle(){
+		$fmdata = $this->input->post();
+		if ($fmdata == null){
+			return $this->index();
+		} else {
+			$uniqid = uniqid("");
+			if ($fmdata['reqtype'] == 'showPassword'){
+				//input target, token
+				/*$this->ci->load->library('restclient', array());
+				$dest_url = $this->ci->config->item('cas_url') . 'idmlink';
+				log_message('debug', print_r($dest_url, TRUE)); 
+				$breply = $this->ci->restclient->post($dest_url, $rdetail);
+				return $breply;*/
+				$breply = array("res"=>"ok", "pass"=>"abcd");
+				echo json_encode($breply);
+			}
+		}
+	}
+	public function valid_priv(){
+		$fmdata = $this->input->post();
+		$loginid = $this->session->userdata('pengguna')->loginid;
+		$query = $this->db->query("select * from v_login_previlegde1
+			where loginid =?", array($loginid));
+		$opts = array();
+		$cpriv = $query->row();
+		
+		if ($cpriv != null){
+			foreach($this->apps_list as $capps => $cval ){
+				if (array_key_exists($capps, $cpriv) && $cpriv->$capps != null){
+					$opts[$capps] = $cval;
+				}
+			}
+		}
+		
+		$ret = array("opts"=>$opts,"npp"=>$loginid);
+		echo json_encode($ret);
+	}
+	
+} 

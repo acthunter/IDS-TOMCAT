@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:c="http://www.springframework.org/schema/c"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:sec="http://www.springframework.org/schema/security"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd
+       http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security.xsd
+       http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
+
+    <bean id="authenticationManager" class="org.jasig.cas.authentication.PolicyBasedAuthenticationManager">
+        <constructor-arg>
+            <map>
+                
+                <entry key-ref="proxyAuthenticationHandler" value-ref="proxyPrincipalResolver" />
+                <!--entry key-ref="primaryAuthenticationHandler" value-ref="primaryPrincipalResolver" /-->
+				 <entry key-ref="dbAuthHandler" value-ref="primaryPrincipalResolver" />
+            </map>
+        </constructor-arg>
+
+        <property name="authenticationPolicy">
+            <bean class="org.jasig.cas.authentication.AnyAuthenticationPolicy" />
+        </property>
+    </bean>
+
+    <bean id="proxyAuthenticationHandler"
+          class="org.jasig.cas.authentication.handler.support.HttpBasedServiceCredentialsAuthenticationHandler"
+          p:httpClient-ref="supportsTrustStoreSslSocketFactoryHttpClient" />
+
+    <bean id="primaryAuthenticationHandler"
+          class="org.jasig.cas.authentication.AcceptUsersAuthenticationHandler">
+        <property name="users">
+            <map>
+                <entry key="casuser" value="Mellon"/>
+            </map>
+        </property>
+    </bean>
+
+    <bean id="proxyPrincipalResolver"
+          class="org.jasig.cas.authentication.principal.BasicPrincipalResolver" />
+
+   
+    <bean id="primaryPrincipalResolver"
+          class="org.jasig.cas.authentication.principal.PersonDirectoryPrincipalResolver"
+          p:principalFactory-ref="principalFactory"
+          p:attributeRepository-ref="attributeRepository" />
+
+  
+  
+  <!--select xl.loginid, xem.NPP,  xen.name as xenname, xem.name, xp.name, xpre.*from xlogin xl 
+	inner join xemployee xem on xl.NPP = xem.NPP
+	inner join xposition xp on xl.positionid = xp.positionid 
+	inner join xentitas xen on xen.entityid = xp.accoffice
+	inner join xpreviledge xpre on xpre.priviledgeid=xp.priviledgeid
+	  where xl.loginid = "21303";-->
+	  
+  <!--bean id="attributeRepository" class="org.jasig.services.persondir.support.jdbc.SingleRowJdbcPersonAttributeDao"-->
+  <bean id="attributeRepository" class="com.antruak.person.dir.jdbc.SingleRowJdbcPersonAttributeDaoCustom">
+    <constructor-arg index="0" ref="dataSource" />
+    <constructor-arg index="1" value="select xl.loginid, xem.NPP,  xen.name as xenname, xem.name, xp.name, xpre.* from xlogin xl 
+	inner join xemployee xem on xl.NPP = xem.NPP
+	inner join xposition xp on xl.positionid = xp.positionid 
+	inner join xentitas xen on xen.entityid = xp.accoffice
+	inner join xpreviledge xpre on xpre.positionid=xp.previledgeid
+	  where {0}" />
+    <property name="queryAttributeMapping">
+        <map>
+            <entry key="username" value="xl.loginid" />  
+        </map>
+    </property>
+	
+	<!-- result vs source -->
+    <property name="resultAttributeMapping">
+        <map>
+            <entry key="loginid" value="loginid" /> 
+			<entry key="eis" value="eis" /> 
+            <entry key="xenname" value="xenname" />
+            <entry key="idminit" value="idm" />
+			<entry key="sco">
+				<list>
+					<value>sco</value>
+					<value>icons</value>
+				</list>
+			</entry>
+        </map>
+    </property> 
+  </bean>
+
+    <!--bean id="attributeRepository" class="org.jasig.services.persondir.support.NamedStubPersonAttributeDao"
+          p:backingMap-ref="attrRepoBackingMap" />
+
+    <util:map id="attrRepoBackingMap">
+        <entry key="uid" value="uid" />
+        <entry key="eduPersonAffiliation" value="eduPersonAffiliation" />
+        <entry key="groupMembership" value="groupMembership" />
+        <entry>
+            <key><value>memberOf</value></key>
+            <list>
+                <value>faculty</value>
+                <value>staff</value>
+                <value>org</value>
+            </list>
+        </entry>
+    </util:map-->
+
+	<bean  name="dataSource" class="org.apache.tomcat.jdbc.pool.DataSource">
+		  <property name="url" value="jdbc:mysql://cdb.bni.co.id:3306/jbpm"/>
+		  <property name="driverClassName" value="com.mysql.jdbc.Driver"/>
+		  <property name="username" value="jbpm"/>
+		  <property name="password" value="jbpm"/>
+	</bean>
+	<bean id="passwordEncoder"
+      class="org.jasig.cas.authentication.handler.DefaultPasswordEncoder"
+      c:encodingAlgorithm="MD5"
+      p:characterEncoding="UTF-8" />
+	  
+	<bean id="dbAuthHandler"
+     class="org.jasig.cas.adaptors.jdbc.QueryDatabaseAuthenticationHandler"
+      p:dataSource-ref="dataSource"
+      p:passwordEncoder-ref="passwordEncoder"
+      p:sql="select password from xlogin where loginid=?" />
+	  
+	 <!--bean id="dbAuthHandler"
+      class="org.jasig.cas.adaptors.jdbc.SearchModeSearchDatabaseAuthenticationHandler"
+      p:dataSource-ref="dataSource"
+      p:passwordEncoder-ref="passwordEncoder"
+      p:tableUsers="users"
+      p:fieldUser="username"
+      p:fieldPassword="password" /--> 
+	
+    <bean id="serviceRegistryDao" class="org.jasig.cas.services.JsonServiceRegistryDao"
+          c:configDirectory="${service.registry.config.location:classpath:services}" />
+
+    <bean id="auditTrailManager" class="org.jasig.inspektr.audit.support.Slf4jLoggingAuditTrailManager" />
+
+    <bean id="healthCheckMonitor" class="org.jasig.cas.monitor.HealthCheckMonitor" p:monitors-ref="monitorsList" />
+
+    <util:list id="monitorsList">
+      
+        <bean class="org.jasig.cas.monitor.SessionMonitor"
+              p:ticketRegistry-ref="ticketRegistry"
+              p:serviceTicketCountWarnThreshold="5000"
+              p:sessionCountWarnThreshold="100000" />
+    </util:list>
+</beans>

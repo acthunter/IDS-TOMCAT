@@ -1,0 +1,117 @@
+.body {
+	font-family: Arial, Helvetica, sans-serif
+}
+
+.box {
+	background-image: url(images/box.jpg);
+	background-size: 
+	background-repeat: no-repeat;
+	width: 100px;
+	height: 100px;
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 24px;
+	font-weight: bold;
+	color: #008c90;
+	text-align: center;
+	vertical-align: middle;
+}
+
+.appBox_x {
+    background-image: url("images/box.jpg");
+    background-repeat: no-repeat;
+    background-size: 100px 70px;
+    color: #008c90;
+    font-family: Arial,Helvetica,sans-serif;
+    font-size: 24px;
+    font-weight: bold;
+    height: 70px;
+    text-align: center;
+    vertical-align: center;
+    width: 100px;
+} 
+
+.appBox {
+    background-repeat: no-repeat;
+    color: #008c90;
+    font-family: Arial,Helvetica,sans-serif;
+    font-size: 24px;
+    font-weight: bold;
+    height: 70px;
+    text-align: center;
+    vertical-align: center;
+    width: 100px;
+}
+
+.error {
+	color: red;
+}
+.btn{
+	background: rgb(61, 157, 179);
+	text-decoration: none;
+	font-size: 11px;
+	font-weight: bold;
+	color: white;
+	text-align:center; 
+	padding: 10px 10px;
+	border-radius: 4px;
+	}
+	
+ul {
+    list-style-type: none;
+	margin-top:-3px;
+    padding: 0;
+    overflow: hidden;
+    background-color: #008c90;
+	width: 100%;
+}
+
+li a, .dropbtn {
+    display: inline-block;
+    color: white;
+    text-align: center;
+    padding: 14px 16px;
+    text-decoration: none;
+}
+
+li a:hover, .dropdown:hover .dropbtn {
+    background-color: #008c90;
+}
+
+li.dropdown {
+    display: inline-block;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #f9f9f9;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1;
+	right: 0;
+}
+
+.dropdown-content a {
+    color: black;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    text-align: left;
+}
+
+.dropdown-content a:hover {background-color: #60B7BC}
+
+.dropdown:hover .dropdown-content {
+    display: block;
+}
+.caret {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  margin-left: 2px;
+  vertical-align: middle;
+  border-top: 4px dashed;
+  border-top: 4px solid \9;
+  border-right: 4px solid transparent;
+  border-left: 4px solid transparent;
+}

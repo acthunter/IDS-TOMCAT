@@ -1,0 +1,25 @@
+<?php  if ( ! defined('BASEPATH')) exit('No direct script access allowed');
+$config['wfjob.TP'] = 'tempPos';
+$config['wfjob.CT'] = 'userreqcp';
+$config['wfjob.RP'] = 'reviewpos';
+$config['wfjob.RI'] = 'rpositem';
+$config['wfjob.UA'] = 'createuser';
+$config['wfjob.A'] = 'adm';
+$config['wfjob.AI'] = 'adm_init';
+$config['wfjob.EM'] = 'employee';
+$config['wfjob.CU'] = 'changeunit';
+$config['wfjob.CP'] = 'perpos';
+$config['wfjob.RS'] = 'rst_target';
+$config['wfjob.UC'] = 'usercheck';
+$config['wfjob.HS'] = 'history';
+$config['wfjob.KL'] = 'killusersso';
+$config['wfjob.IU'] = 'userinfo';
+$config['wfjob.SY'] = 'input_sco';
+$config['wfjob.CI'] = 'createicons';
+$config['wfjob.UH'] = 'updatehp';
+$config['wfjob.RC'] = 'rst_management';
+$config['wfjob.CL'] = 'lvl_kapabilitas';
+$config['wfjob.CW'] = 'createwebmail';
+$config['wfjob.BN'] = 'createbinareuse';
+$config['wfjob.UL'] = 'casunlock';
+?>

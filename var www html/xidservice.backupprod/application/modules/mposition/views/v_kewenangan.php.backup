@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head> 
+	<style type="text/css">
+		.ui-autocomplete { height: 300px; overflow-y: scroll; overflow-x: hidden; }
+		.width100 { width: 100px; }
+	</style>
+</head>
+<body>
+	<script type="text/javascript">
+		var table;
+		
+		$(document).ready(function() {
+			$("#tposname").autocomplete({  
+				minLength: "2",  
+				source:   
+				function(request, response){  
+				console.log('test');
+					$.ajax({  
+						url: "<?php echo site_url('mposition/temppos/pos_search')?>",  
+						dataType: 'json',  
+						type: 'POST',  
+						data: {
+							pattern: request.term
+						}, 
+						success:      
+						function(data){  
+							response($.map(data, function (item) {
+								return {
+									value: item.pname,
+									rvalue: item
+								}
+							}))
+						},  
+					});  
+				},
+				select: function( event, ui ) {					
+					$('#tposid').val(ui.item.rvalue.positionid);
+				}	
+			});
+		});
+		
+		$(function () {
+			$('#trx_dt').datetimepicker({
+				minDate: new Date()
+			});
+			$('#ex_dt').datetimepicker({
+				minDate: new Date()
+			});
+			$("#trx_dt").on("dp.change", function (e) {
+				$('#ex_dt').data("DateTimePicker").minDate(e.date);
+			});
+			$("#ex_dt").on("dp.change", function (e) {
+				$('#trx_dt').data("DateTimePicker").maxDate(e.date);
+			});
+		});
+		
+		function query_id()
+		{		
+			var url = "<?php echo site_url('mposition/temppos/query')?>" ;
+			$.ajax({
+				url : url,
+				type: "POST",
+				data: $('#form').serialize(),
+				dataType: "JSON",
+				success: function(data)
+				{
+					$('[name="nama"]').val(data.name);
+					$('[name="cposname"]').val(data.nama);
+				},
+				error: function (jqXHR, textStatus, errorThrown)
+				{
+					alert('User not found');
+					$('#btnSave').attr('disabled',false); 
+				}
+			});
+		}
+		
+		function save_request()
+		{			
+			var url = "<?php echo site_url('mposition/temppos/add')?>" ;
+			$.ajax({
+				url : url,
+				type: "POST",
+				data: $('#form').serialize(),
+				dataType: "JSON",
+				success: function(data)
+				{
+					alert('Data has been saved');
+					window.location.reload();
+				},				
+				error: function (jqXHR, textStatus, errorThrown)
+				{
+					alert('Error adding / updating data'); 
+					$('#btnSave').attr('disabled',false); 
+				}
+			});
+		}	
+	</script>
+
+	<div class="modal-content" style="padding: 10px; width: 450px; margin-left: 160px;">
+		<div class="modal-header">
+			<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+			<h3 class="modal-title" style=" text-align: center">Ubah Kewenangan</h3>
+		</div>
+		<div class="modal-body form">
+			<form action="#" id="form" class="form-horizontal">
+				<input name="accOffice" id="accOffice" class="form-control" type="hidden" readonly>
+				<div class="form-group row">
+					<div class="col-md-4">
+						<label>No User</label>
+						<input name="loginid" id="loginid" onchange="query_id()" placeholder="No User" class=" form-control" type="text">
+					</div>
+					<div class="col-md-8">
+						<label>Nama</label>
+						<input name="nama" id="nama" placeholder="Nama" class="form-control" type="text" readonly>
+					</div>
+				</div>								
+				<div class="form-group">
+					<div class="col-md-12">
+						<label>Posisi Sekarang</label>      
+						<input name="cposname" id="cposname" placeholder="Posisi Sekarang" class="form-control" type="text" readonly>
+						<input name="cposid" id="cposid" type="hidden">
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-md-12">
+						<label>Posisi Target</label>
+					    <input name="tposname" id="tposname" placeholder="-- Posisi Target --" class="autocomplete form-control" type="text" onclick="$(this).val(''); $('#tposid').val('');">
+						<input name="tposid" id="tposid" type="text" hidden>
+					</div>
+				</div>
+				<div class="form-group row">
+					<div class="col-xs-6">
+						<label>Tanggal Efektif</label>
+					    <input name="trx_dt" type="text" id="trx_dt" placeholder="Tanggal Efektif" class="form-control" >
+					</div>
+					<div class="col-xs-6">
+						<label>Tanggal Efektif Akhir</label>
+					    <input name="ex_dt" type="text" id="ex_dt" placeholder="Tanggal Efektif Akhir" class="form-control" >
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-md-12">
+						<label>Notes</label>
+					    <input name="notes" id="notes" placeholder="Notes" class="form-control" type="text">
+					</div>
+				</div>
+				<div class="modal-footer">
+					
+					<button type="button" id="btnSave" onclick="save_request()" class="btn btn-success">Submit</button>
+					<button type="reset" class="btn btn-danger" data-dismiss="modal">Cancel</button>
+				</div>
+			</form>
+		</div>
+	</div>
+</body>
+</html>

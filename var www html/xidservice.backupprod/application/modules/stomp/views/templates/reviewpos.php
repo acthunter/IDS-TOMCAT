@@ -1,0 +1,310 @@
+<script type="text/javascript">
+	var dt_rev_post;
+	var xrpid;
+	var rp_stage;
+	
+	function  <?php echo $modal_id;?>_trigger(fdata){
+		console.log(fdata);
+		$('#div_btn_<?php echo $modal_id;?> button').hide();
+		$('#btn-modal').show();
+		$.ajax({
+				url : "<?php echo site_url('')?>" + fdata['url'],
+				type: "POST",
+				data: fdata,
+				dataType: "JSON",
+				success: function(wdata){
+					var data = wdata['detail'];
+					console.log(wdata);
+					
+					rp_stage = wdata['stage'];
+					var lockInfo = "";
+					if (wdata['locked'])
+						lockInfo = " locked by " + wdata['lockActor'] + " -- " + wdata['lockDate'];
+						
+					$('#progressbar').progressbar({value: wdata['currScore']/wdata['targetScore'], max: 1});
+					$('#stagename').html(wdata['pname'] + " (" + wdata['currScore'] + "/" + wdata['targetScore'] + ")");
+					$('#lockinfo').html(lockInfo);
+					
+					$('#currActor').html(jsonFlat(wdata['currActor']));
+					
+					$('#doneActor').html(arrFlat(wdata['doneActor']));
+					
+					$('#wfid').val(wdata['id']);
+					$('#mode').val(wdata['mode']);
+					
+					//$('#<?php echo $modal_id;?>_form #id').val(wdata['id']);
+					$('#<?php echo $modal_id;?>_form #wfid').val(wdata['id']);
+					
+					for (val of wdata["eaction"]){
+						$("#<?php echo $modal_id;?>_btn_" + val).show();
+					}
+					
+					dt_rev_post = $('#dt_rev_post').DataTable({ 
+							//"retrieve": true,
+							"processing": true, 
+							"serverSide": true, 
+							"processing": true,
+							//"scrollY":        "300px",
+							//"scrollCollapse": true,
+							//"paging":         false,
+							"iDisplayLength": 10,
+							"lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
+							"order": [], 
+							"ajax": {
+								"url": "<?php echo site_url('stomp/xids/jobitemlist')?>",
+								"type": "POST",
+								"dataType": "JSON",
+								"data" : {'wfid': wdata['id'],'rpid': data['id'], 'mode':'RP'}
+							},
+							"columns" : [
+							{"data":"id"},
+							{"data":"reqid"},
+							{"data":"loginid"},
+							{"data":"name"},
+							{"data":"posname"},
+							{"data":"posnew"},
+							{"data":"mobileNumber"},
+							{"data":"mobilenew"},
+							],
+							"fnRowCallback": function( nRow, aData, iDisplayIndex, iDisplayIndexFull ) {
+								 if (( aData["posname"] != aData["posnew"] ) && ( aData["mobileNumber"] != aData["mobilenew"] ))
+								  { 
+									$('td', nRow).css('background-color', '#66CDAA' );
+									$('td', nRow).css('color', '#fffff' );
+								  }else if (( aData["mobileNumber"] != aData["mobilenew"] )  )
+								  {
+									$('td', nRow).css('background-color', '#008c90' );
+									$('td', nRow).css('color', '#fffff' );
+								  } else if (( aData["posname"] != aData["posnew"] ) )
+								  { 
+									$('td', nRow).css('background-color', '#FF7F50' );
+									$('td', nRow).css('color', '#fffff' );
+								  } else {
+									  $('td', nRow).css('background-color', '#fffff' ); 
+								  }
+									
+							},
+							"columnDefs": [
+							{  "targets": [ 7 ],"visible": false, },
+							{  "targets": [ 0 ],"visible": false, },
+							{  "targets": [ 1 ],"visible": false, }
+							],
+					});
+					if (fdata['reqtype'] == "read_list"){
+						$('[id="div_btn_<?php echo $modal_id;?>"]').hide();
+						
+					}else{
+					$('#dt_rev_post').on('click', 'tr:not(:first)', function () {
+							//job_click('#modal1', '#modal_xadm', tab_myjob.row($(this).index()).data());
+							
+							var rdata = dt_rev_post.row($(this).index()).data();
+							var ftype = rdata['ftype'];
+							//var fparam = {'id' : rdata['id'], "mode" : 'RI',
+							//	'url':'rpositem', 'reqtype' : 'readitem'};
+							//loadForm('modal_l2', fparam, true);
+							
+							rdata['mode'] = 'RI';
+							rdata['url'] = 'rpositem';
+							rdata['reqtype'] = 'readitem';
+							rdata['stage'] = rp_stage;
+							loadForm('modal_l2', rdata, true);
+							$('#modal_l2').on('hidden.bs.modal', function () {
+								dt_rev_post.ajax.reload(null, false);
+							})
+					});
+					dt_rev_post.ajax.reload( null, false );
+					$('[id="div_btn_<?php echo $modal_id;?>"]').show();
+					}
+				}
+		});
+		
+				$.validator.addMethod('regex', function(value, element, param) {
+        return this.optional(element) ||
+            value.match(typeof param == 'string' ? new RegExp(param) : param);
+    },
+    'Please enter a value in the correct format.');
+		$(function() {
+		 $("#formcttn").validate({
+				rules: {
+                    
+					confirm: {
+                        required: true
+                    }
+					
+                },
+                messages: {
+					
+					confirm: {
+						required: "Silahkan centang pernyataan"
+					}
+                },
+				errorPlacement: function(label, element) {
+					element.parent().append(label);
+				  },
+				highlight: function (element) {
+					$(element).parent().addClass('error')
+				},
+				unhighlight: function (element) {
+					$(element).parent().removeClass('error')
+				},
+                submitHandler: function(form) {
+					console.log("about to submit");
+                }
+            });
+		});
+		$('#progressbar').click(function(){
+			var ctarget = $('#wfinfo');
+			if (ctarget.hasClass('infohide'))
+				ctarget.removeClass('infohide');
+			else
+				ctarget.addClass('infohide');
+		});	
+	};
+	
+	/* function <?php echo $modal_id;?>_submit(btype){
+		var fdata = {'url': 'wf/wfaction', 'modal_id' : "<?php echo $modal_id;?>", 'btype': btype };
+		action_submit(fdata);
+	}	 */
+	
+	function <?php echo $modal_id;?>_submit(btype){
+		var fdata = {'url': 'wf/wfaction', 'modal_id' : "<?php echo $modal_id;?>", 'btype': btype };
+		var isMandatory = ("submit, approve, batal, tolak".indexOf(fdata['btype']) != -1);
+		if (isMandatory){
+			$('#note').val('');
+			$("#confirm").prop("checked", false);
+			$('#catatan').modal('show');
+			$('#btntype').val(btype);
+			$("#formconfirmdata").empty("");
+			if (btype =='submit'){
+				  $("#formconfirmdata").append("<label >Pernyataan</label><div id='pernyataan'>Dengan ini saya menyatakan bahwa Review Posisi ini adalah benar sesuai data Posisi terakhir pegawai pada saat penginputan.</div><div class='form-check'><input class='form-check-input' type='checkbox' name='confirm' id='confirm'><label class='form-check-label' for='disabledFieldsetCheck' >Setuju		  </label></div>");	
+			}else if (btype =='approve'){
+				  $("#formconfirmdata").append("<label >Pernyataan</label><div id='pernyataan'>Dengan ini saya menyetujui bahwa Review Posisi ini adalah benar sesuai data Posisi terakhir pegawai pada saat penginputan.</div><div class='form-check'><input class='form-check-input' type='checkbox' name='confirm' id='confirm'><label class='form-check-label' for='disabledFieldsetCheck' >Setuju		  </label></div>");	
+			}else{
+				 $("#formconfirmdata").empty("");
+			}
+		}else{
+			action_submit(fdata);
+		}
+			/* action_submit(fdata); */
+	}
+	function submit_note(){
+		var fdata = {'url': 'wf/wfaction', 'modal_id' : "<?php echo $modal_id;?>", 'btype': $('#btntype').val() };
+		var isValid = $("#formcttn").valid();
+		if (isValid){
+			$('#catatan').modal('hide');
+			$('#cttn').val($('#note').val());
+			action_submit(fdata);
+		}	
+			/* action_submit(fdata); */
+	}	
+	
+	
+</script>
+<style>
+	li.auth {text-align: center; width: 60px; float: left;}
+	li.auth_1 { background-color: grey;}
+	li.auth_2 { background-color: yellow;}
+	li.auth_3 { background-color: green;}
+	
+	.infohide {
+		display:none;
+	}
+	#<?php echo $modal_id;?>_form{
+		padding: 0px;
+		background: none;
+		border: none;
+	}
+	#<?php echo $modal_id;?>_form{
+		-webkit-box-shadow: none;
+		-moz-box-shadow: none;
+		box-shadow: none;
+	}
+	#formcttn label.error {
+		color: red;
+		font-size: 11px;
+		width: 100%;
+	}
+	.form-check{
+		text-align: center;padding-top: 7px;
+	}	
+
+</style>
+<div id="<?php echo $modal_id;?>_content" class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document" style="width: 85%;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+		<h3 class="modal-title" style="padding-left: 40%;">Review Posisi</h3>
+      </div>
+      <div class="modal-body">
+			<table cellpadding="" cellspacing="2" class="tabel" id="dt_rev_post" style="width: 100%;" >	
+							<thead>
+								<tr>
+									<th>No</th>
+									<th>Req ID</th>
+									<th>NPP</th>
+									<th>Nama</th>
+									<th>Posisi Semula</th>
+									<th>Posisi Baru</th>										
+									<th>No HP</th>
+									<th>No HP Baru</th>
+								</tr>
+							</thead>
+								<tbody>
+								</tbody>
+					</table>
+					<form action="#" id="<?php echo $modal_id;?>_form" class="form-horizontal"> 				
+						
+						<input name="status" id="status" class="form-control" type="hidden" >
+						<input name="id" id="id" class="form-control" type="hidden" >
+						<input name="mode" id="mode" class="form-control" type="hidden" >
+						<input name="wfid" id="wfid" class="form-control" type="hidden" >	
+						<input name="reqtype" id="reqtype" class="form-control" type="hidden" >						
+						<input name="notes" id="notes" class="form-control" type="hidden" >
+						<input name="cttn" id="cttn" class="form-control" type="hidden" >	
+					
+					<div class="modal-footer" id="div_btn_<?php echo $modal_id;?>">
+						<button type="button" id="<?php echo $modal_id;?>_btn_submit" onclick="<?php echo $modal_id;?>_submit('submit')" class="btn btn-success">Submits</button>
+						<button type="button" id="<?php echo $modal_id;?>_btn_cancel" onclick="<?php echo $modal_id;?>_submit('batal')" class="btn btn-danger">Cancel</button>
+						<button type="button" id="<?php echo $modal_id;?>_btn_approve" onclick="<?php echo $modal_id;?>_submit('approve')" class="btn btn-success">Approve</button>
+						<button type="button" id="<?php echo $modal_id;?>_btn_reject" onclick="<?php echo $modal_id;?>_submit('tolak')" class="btn btn-danger">Reject</button>
+						<button type="button" id="<?php echo $modal_id;?>_btn_release" onclick="<?php echo $modal_id;?>_submit('release')" class="btn btn-primary">Release</button>
+					</div>
+				</form>	
+      </div>
+      
+  </div>
+</div>
+</div>
+
+<div class="container"> 
+  <div class="modal fade" id="catatan" role="dialog">
+    <div class="modal-dialog">
+    
+      <!-- Modal content-->
+      <div class="modal-content">
+	  <form id="formcttn" style="border-radius: unset;padding: unset;box-shadow: unset;background: unset;border: unset;">
+
+        <div class="modal-body">
+          
+	  	    
+			<div class="form-group" id="formconfirmdata">
+				
+			</div>
+			<div class="form-group">
+				<label for="exampleFormControlTextarea1">Catatan</label>
+				<textarea class="form-control" id="note" name="note" rows="3"></textarea>
+			</div>
+			<input name="btntype" id="btntype" class="form-control" type="hidden"  >	
+			</div>
+        <div class="modal-footer">
+			<button type="button" id="submit-note" onclick="submit_note()" class="btn btn-primary">Submit</button>
+			<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+		</div>
+		</form>
+      </div>
+      
+    </div>
+  </div>
+  
+</div>

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<flow xmlns="http://www.springframework.org/schema/webflow"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/webflow
+                          http://www.springframework.org/schema/webflow/spring-webflow-2.0.xsd"
+	start-state="init">
+
+	<input name="username" type="java.lang.String" />
+	<input name="tokenType" type="java.lang.String" />
+	
+	<action-state id="init">
+		<set name="flowScope.username" value="username" />
+		<transition to="lookupSecurityQuestion" />
+	</action-state>
+
+	<!-- ##>> PrepareQuestoion -->
+	<action-state id="lookupSecurityQuestion">
+		<evaluate
+			expression="ldapPasswordManagerService.getUserSecurityChallenge(flowScope.username, tokenType)"
+			result="flowScope.securityChallenge" />
+		<transition to="testUserSecurityQuestionsSet" />
+	</action-state>
+
+	<decision-state id="testUserSecurityQuestionsSet">
+		<if
+			test="flowScope.securityChallenge != null 
+                and flowScope.securityChallenge.questions != null
+                and flowScope.securityChallenge.questions.size() > 0"
+			then="answerSecurityQuestionEntry" else="lookupDefaultSecurityQuestions" />
+	</decision-state>
+
+	<action-state id="lookupDefaultSecurityQuestions">
+		<evaluate
+			expression="ldapPasswordManagerService.getDefaultSecurityChallenge(flowScope.username)"
+			result="flowScope.securityChallenge" />
+		<transition to="testDefaultSecurityQuestionsSet" />
+	</action-state>
+
+	<decision-state id="testDefaultSecurityQuestionsSet">
+		<if
+			test="flowScope.securityChallenge != null 
+                and flowScope.securityChallenge.questions != null
+                and flowScope.securityChallenge.questions.size() > 0"
+			then="answerSecurityQuestionEntry" else="securityFail" />
+	</decision-state>
+
+	<action-state id="answerSecurityQuestionEntry">
+		<set name="flowScope.responseAllowRepeat" value="true" />
+		<transition to="answerSecurityQuestion" />
+	</action-state>
+
+
+	<view-state id="answerSecurityQuestion" view="casPmAnswerSecurityQuestion">
+		<transition on="submitAnswer" to="checkSecurityQuestionResponse" />
+	</view-state>
+
+	<action-state id="checkSecurityQuestionResponse">
+		<evaluate expression="checkSecurityQuestionResponseAction" />
+		<transition on="success" to="securitySuccess">
+			<evaluate
+				expression="securityTokenHandlerAction.getOTPMode(flowScope.username, flowRequestContext)"
+				result="flowScope.tokenModeOption" />
+				<!--  hiddent flowScope.npp setting -->
+		</transition>
+		<transition on="error" to="checkSecurityRepeat">
+			<set name="requestScope.securityQuestionValidationError" value="true" />
+		</transition>
+	</action-state>
+
+	<decision-state id="checkSecurityRepeat">
+		<if test="flowScope.responseAllowRepeat" then="checkAnswerRetry"
+			else="securityFail" />
+	</decision-state>
+	
+	<action-state id="checkAnswerRetry">
+		<set name="flowScope.responseAllowRepeat" value="false" />
+		<transition to="answerSecurityQuestion" />
+	</action-state>
+
+	<end-state id="securitySuccess">
+		<output name="securityChallenge" value="flowScope.securityChallenge" />
+		<output name="tokenModeOption" value="flowScope.tokenModeOption" />
+		<output name="npp" value="flowScope.npp"/>
+	</end-state>
+	<end-state id="securityFail">
+	
+	</end-state>
+
+</flow>
+

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:util="http://www.springframework.org/schema/util" xmlns:jee="http://www.springframework.org/schema/jee"
+	xmlns:task="http://www.springframework.org/schema/task"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans classpath:xsd/spring-beans-4.0.xsd
+        http://www.springframework.org/schema/context classpath:xsd/spring-context-4.0.xsd
+		http://www.springframework.org/schema/aop classpath:xsd/spring-aop-4.0.xsd
+    	http://www.springframework.org/schema/tx classpath:xsd/spring-tx-4.0.xsd
+    	http://www.springframework.org/schema/util classpath:xsd/spring-util-4.0.xsd
+		http://www.springframework.org/schema/jee classpath:xsd/spring-jee-4.0.xsd 
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.2.xsd">
+	
+<!-- 	<context:mbean-export/> -->
+<!-- 	<context:mbean-server/> -->
+	<context:annotation-config />
+<!-- <aop:aspectj-autoproxy /> -->
+<!-- 		<context:component-scan base-package="com.antruak.cas.test.main" /> -->
+		<context:component-scan base-package="com.antruak.cas.service.pm" />
+		
+			
+	<tx:annotation-driven transaction-manager="transactionManager" />
+
+
+	<bean id="casEntityManagerFactory"
+		class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+		<property name="persistenceXmlLocation" value="classpath:META-INF/persistence-cas.xml"/> 
+
+
+		<property name="persistenceUnitName" value="cas.repo" />
+		<property name="dataSource" ref="dataSource" />
+
+	</bean>
+
+	<bean id="transactionManager" class="org.springframework.orm.jpa.JpaTransactionManager">
+		<property name="entityManagerFactory" ref="casEntityManagerFactory" />
+
+	</bean>
+</beans>

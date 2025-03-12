@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<flow xmlns="http://www.springframework.org/schema/webflow"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/webflow
+                          http://www.springframework.org/schema/webflow/spring-webflow-2.0.xsd">
+
+	<input name="otpMode" type="java.lang.String" />
+	<input name="username" type="java.lang.String" />
+	<input name="tokenChallenge" type="com.antruak.cas.pm.flow.SecurityChallenge" />
+
+
+	<action-state id="init">
+		<set name="flowScope.otpMode" value="otpMode" />
+		<set name="flowScope.username" value="username" />
+		<set name="flashScope.username" value="username" />
+		<transition to="checkSecurityTokenResponseEntry" />
+	</action-state>
+
+	<action-state id="checkSecurityTokenResponseEntry">
+		<set name="flowScope.responseAllowRepeat" value="true" />
+		<set name="flowScope.tokenChallenge" value="tokenChallenge" />
+		<transition to="inputToken">
+			<set name="flowScope.retryAllowed" value="'YES'" />
+		</transition>
+	</action-state>
+
+	<view-state id="inputToken" view="casPmAnswerSecurityToken"
+		model="netIdBean">
+		<var name="netIdBean" class="com.antruak.cas.pm.flow.model.NetIdBean" />
+		<binder>
+			<binding property="netId" />
+		</binder>
+		<transition on="submitAnswer" to="checkSecurityTokenResponse">
+			<set name="flowScope.username" value="username" />
+			<set name="flowScope.mtoken" value="flashScope.mtoken" />
+		</transition>
+		<transition on="resendToken" to="resendToken" />
+	</view-state>
+
+	<action-state id="checkSecurityTokenResponse">
+		<evaluate expression="securityTokenHandlerAction" />
+		<transition on="success" to="answerSuccess" />
+		<transition to="checkRetry">
+			<set name="requestScope.securityQuestionValidationError" value="true" />
+		</transition>
+	</action-state>
+
+	<action-state id="checkRetry">
+		<evaluate expression="flowScope.retryAllowed" />
+		<transition on="YES" to="inputToken">
+			<set name="flowScope.retryAllowed" value="'NO'" />
+		</transition>
+		<transition to="answerFail" />
+	</action-state>
+
+	<end-state id="answerFail" />
+	<end-state id="resendToken" />
+	<end-state id="answerSuccess">
+		<!-- <output name="username" value="username"/> -->
+	</end-state>
+</flow>
+
